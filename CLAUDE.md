@@ -45,6 +45,11 @@ cocos-extension/        ← Cocos Creator igs-ui-importer
 - **發版**：commit → push → `git tag vX.X.X && git push origin vX.X.X`
 - **Cocos 工作流**：ui-to-cocos 匯出 layout.json → Cocos igs-ui-importer 生成 Prefab
 
+## 待辦 / 未決議題
+- Repo 權限：目前 Public，之後可能改 Private（需決定 PAT 發放方式）
+- Webhook URL 硬編碼在 main.js DEFAULT_WEBHOOK，改 Private 前要移到純 config.json 讀取
+- 缺少 icon：shared-resources/icon.png、ui-to-cocos/icon.png（48x48 PNG RGBA）
+
 ## 注意事項
 - CSInterface.js 勿改（Adobe SDK）
 - config.json 含 PAT，絕不 commit
