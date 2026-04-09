@@ -1,9 +1,0 @@
-{
-    "name": "快速取色",
-    "icon": "icon.png",
-    "entry": "index.html",
-    "version": "1.0.0",
-    "description": "取得並設定前景色/背景色，支援 HEX 輸入",
-    "category": ["color"],
-    "minPsVersion": "20.0"
-}
