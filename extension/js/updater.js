@@ -373,6 +373,12 @@
                     App.setStatus('正在安裝更新...');
 
                     try {
+                        // Clean tools/ directory first so removed tools don't persist
+                        var toolsPath = path.join(extPath, 'tools');
+                        if (fs.existsSync(toolsPath)) {
+                            deleteFolderRecursive(toolsPath);
+                        }
+
                         copyFolderRecursive(sourceDir, extPath);
 
                         // Cleanup temp files
