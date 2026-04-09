@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.igs.arttools" ExtensionBundleVersion="1.0.0"
+<ExtensionManifest Version="12.0" ExtensionBundleId="com.igs.arttools" ExtensionBundleVersion="1.0.0"
     ExtensionBundleName="IGS ACD Art Tools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <ExtensionList>
@@ -8,7 +8,7 @@
 
     <ExecutionEnvironment>
         <HostList>
-            <!-- Photoshop CC 2019 (v20.0) through Photoshop 2027 (v99.9) -->
+            <!-- Photoshop CC 2019 (v20.0) through Photoshop 2027+ (v99.9) -->
             <Host Name="PHXS" Version="[20.0,99.9]" />
             <Host Name="PHSP" Version="[20.0,99.9]" />
         </HostList>
@@ -16,7 +16,7 @@
             <Locale Code="All" />
         </LocaleList>
         <RequiredRuntimeList>
-            <RequiredRuntime Name="CSXS" Version="9.0" />
+            <RequiredRuntime Name="CSXS" Version="11.0" />
         </RequiredRuntimeList>
     </ExecutionEnvironment>
 
