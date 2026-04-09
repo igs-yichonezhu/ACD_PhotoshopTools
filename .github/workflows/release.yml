@@ -69,23 +69,38 @@ jobs:
           echo "Installer size:"
           ls -lh igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
 
-      # 6. Create GitHub Release
+      # 6. Create GitHub Release (uses RELEASE_NOTES.md if exists, otherwise default)
+      - name: Prepare release notes
+        id: notes
+        run: |
+          if [ -f RELEASE_NOTES.md ]; then
+            echo "Using custom release notes"
+            # Escape for GitHub Actions
+            NOTES=$(cat RELEASE_NOTES.md)
+          else
+            NOTES="暫無更新說明"
+          fi
+          # Write to file for gh-release
+          cat > /tmp/release_body.md << 'HEREDOC'
+          ## IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}
+
+          ### 首次安裝
+          下載 `igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe` 雙擊安裝即可。
+          安裝時 Repository 已預填，Token 留空即可（公開模式）。
+
+          ### 已安裝的用戶
+          - **自動更新：** 開啟 Photoshop 插件面板，如有偵測到新版本會自動提示更新
+          - **手動更新：** 點擊面板右上角 ↻ 按鈕檢查更新
+
+          HEREDOC
+          cat RELEASE_NOTES.md >> /tmp/release_body.md 2>/dev/null || true
+          echo -e "\n---\n*此 Release 由 GitHub Actions 自動產生*" >> /tmp/release_body.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}"
-          body: |
-            ## IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}
-
-            ### 首次安裝
-            下載 `igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe` 雙擊安裝即可。
-
-            ### 已安裝的用戶
-            - **自動更新：** 開啟 Photoshop 插件面板，如有偵測到新版本會自動提示更新
-            - **手動更新：** 點擊面板右上角 ↻ 按鈕檢查更新
-
-            ---
-            *此 Release 由 GitHub Actions 自動產生*
+          body_path: /tmp/release_body.md
           files: |
             igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
             igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
