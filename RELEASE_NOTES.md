@@ -1,15 +1,16 @@
-### 更新內容（v1.5.0）
+### 更新內容（v1.6.0）
 
-#### 修正與優化
-- 自動更新現在每小時自動檢查（開著 PS 不用手動點）
+#### 新功能
+- **Cocos UI Importer 隨插件安裝** — 安裝路徑下包含 Cocos Creator Extension，點「開啟資料夾」即可取用
+- 工具改名為 **Cocos UI Importer**，匯出路徑提示支援 Cocos Creator 3.8.6
+
+#### 修正
+- 修正 GitHub API 403 限流時不再彈出惱人的 alert 視窗
+- 修正 Google Sheets webhook 權限與 302 redirect 問題
+- 修正 manifest 版本號被 CI/CD 覆蓋的嚴重問題
 - 更新時自動清除已移除的工具
-- 修正公司內網 SSL 憑證驗證問題
-- 修正無 Token 時無法檢查更新
-- 面板寬度加大至 460px，分類標籤不再被裁切
+- 每小時自動檢查更新
 
-#### 功能
-- 更新通知可展開查看 Release Notes
-- 共用資源工具（內部連結卡片）
-- Usage Log（本地 + Google Sheets）
-- Freepik 風格卡片介面
-- 公開模式免登入，安裝後直接可用
+#### 面板優化
+- 面板寬度加大至 460px
+- Release Notes 可展開查看
