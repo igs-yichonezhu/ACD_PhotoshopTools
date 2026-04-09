@@ -278,7 +278,19 @@
         empty.style.display = 'none';
         grid.style.display = 'grid';
 
-        filtered.forEach(function (tool) {
+        // Gradient palette for tool thumbnails
+        var TOOL_GRADIENTS = [
+            'linear-gradient(135deg, #1a5ca0, #3a90e0)',  // blue
+            'linear-gradient(135deg, #0f7b46, #1db974)',  // green
+            'linear-gradient(135deg, #c47b1a, #f0a030)',  // orange
+            'linear-gradient(135deg, #6a2fa0, #9b50e0)',  // purple
+            'linear-gradient(135deg, #a02f4a, #e05070)',  // pink
+            'linear-gradient(135deg, #2f8a8a, #40c0c0)',  // teal
+            'linear-gradient(135deg, #8a6a2f, #c0a040)',  // gold
+            'linear-gradient(135deg, #4a4a6a, #7070a0)'   // slate
+        ];
+
+        filtered.forEach(function (tool, index) {
             var card = document.createElement('div');
             card.className = 'tool-card';
             card.onclick = function () {
@@ -286,30 +298,33 @@
             };
             card.title = tool.description;
 
-            // Icon
+            // Thumbnail area
             var iconDiv = document.createElement('div');
             iconDiv.className = 'tool-card-icon';
+
             if (tool.icon && fs.existsSync(tool.icon)) {
                 var img = document.createElement('img');
                 img.src = 'file:///' + tool.icon.replace(/\\/g, '/');
                 img.alt = tool.name;
                 iconDiv.appendChild(img);
             } else {
+                iconDiv.style.background = TOOL_GRADIENTS[index % TOOL_GRADIENTS.length];
                 iconDiv.textContent = tool.name.charAt(0).toUpperCase();
             }
+
+            // Version tag (overlaid on thumbnail)
+            var verDiv = document.createElement('div');
+            verDiv.className = 'tool-card-version';
+            verDiv.textContent = 'v' + tool.version;
+            iconDiv.appendChild(verDiv);
+
             card.appendChild(iconDiv);
 
-            // Name
+            // Name below thumbnail
             var nameDiv = document.createElement('div');
             nameDiv.className = 'tool-card-name';
             nameDiv.textContent = tool.name;
             card.appendChild(nameDiv);
-
-            // Version
-            var verDiv = document.createElement('div');
-            verDiv.className = 'tool-card-version';
-            verDiv.textContent = 'v' + tool.version;
-            card.appendChild(verDiv);
 
             grid.appendChild(card);
         });
