@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>UI 匯出到 Cocos</title>
+<style>
+  :root {
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-card: #2d2d2d;
+    --bg-input: #1a1a1a;
+    --bg-hover: #383838;
+    --text-primary: #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666;
+    --accent: #3794ff;
+    --accent-dim: rgba(55, 148, 255, 0.12);
+    --success: #4ec9b0;
+    --success-dim: rgba(78, 201, 176, 0.12);
+    --warning: #e8a854;
+    --warning-dim: rgba(232, 168, 84, 0.12);
+    --error: #f14c4c;
+    --error-dim: rgba(241, 76, 76, 0.12);
+    --purple: #c586c0;
+    --purple-dim: rgba(197, 134, 192, 0.12);
+    --border: #3c3c3c;
+    --border-focus: #3794ff;
+    --radius: 6px;
+    --radius-sm: 4px;
+    --shadow-modal: 0 16px 48px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "Adobe Clean", "Segoe UI", -apple-system, sans-serif;
+    padding: 12px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* ---- Title ---- */
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 10px 0;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+
+  /* ---- Scrollbar ---- */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+  /* ---- Section Card ---- */
+  .settings-panel,
+  .layer-tree-panel,
+  .progress-panel,
+  .result-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+  }
+
+  /* ---- Settings Panel ---- */
+  .settings-panel {
+    padding: 12px 14px;
+  }
+  .setting-row {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setting-row:last-child { margin-bottom: 0; }
+  .setting-row label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 64px;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .setting-row input[type="text"],
+  .setting-row input[type="number"],
+  .setting-row select {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .setting-row input:focus,
+  .setting-row select:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 1px var(--accent-dim);
+  }
+  .setting-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .btn-browse {
+    padding: 5px 10px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-browse:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  /* ---- Layer Tree ---- */
+  .layer-tree-panel {
+    padding: 10px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  .tree-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tree-header span { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+  .tree-header button {
+    font-size: 10px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tree-header button:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .tree-node {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 4px;
+    font-size: 11px;
+    cursor: default;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .tree-node:hover { background: rgba(255,255,255,0.03); }
+  .tree-node input[type="checkbox"] {
+    accent-color: var(--accent);
+    margin: 0;
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+  }
+  .tree-node .icon {
+    font-size: 10px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tree-node .icon-img { color: var(--success); }
+  .tree-node .icon-txt { color: var(--warning); }
+  .tree-node .icon-grp { color: var(--accent); }
+  .tree-node .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+  .tree-node .type-tag {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .type-img { background: var(--success-dim); color: var(--success); }
+  .type-txt { background: var(--warning-dim); color: var(--warning); }
+  .type-grp { background: var(--accent-dim); color: var(--accent); }
+
+  .tree-children { padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.05); margin-left: 6px; }
+
+  /* ---- Progress ---- */
+  .progress-panel {
+    display: none;
+    padding: 14px;
+    text-align: center;
+  }
+  .progress-bar-bg {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #60b0ff);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-text { font-size: 11px; color: var(--text-secondary); }
+
+  /* ---- Buttons ---- */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 4px 0;
+  }
+  .btn {
+    padding: 8px 20px;
+    color: white;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; filter: none; }
+  .btn-primary { background: var(--accent); }
+  .btn-success { background: var(--success); color: #1a1a1a; }
+
+  .status {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    min-height: 16px;
+    text-align: center;
+  }
+
+  .loading {
+    color: var(--accent);
+    padding: 24px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ---- Result Panel ---- */
+  .result-panel {
+    display: none;
+    padding: 14px;
+    font-size: 11px;
+  }
+  .result-panel strong { font-weight: 600; }
+
+  /* ---- Log Modal ---- */
+  .log-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+  .log-overlay.show { display: flex; }
+  .log-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 92%;
+    max-width: 440px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-modal);
+  }
+  .log-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-modal-header span { font-size: 13px; font-weight: 600; }
+  .log-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .log-modal-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .log-modal-body {
+    padding: 12px 16px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+  .log-section { margin-bottom: 12px; }
+  .log-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .log-item { padding: 2px 0; color: #bbb; }
+  .log-item .log-path { color: var(--text-muted); font-size: 10px; }
+  .log-ok {
+    color: var(--success);
+    font-size: 13px;
+    padding: 20px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* ---- Stop Button ---- */
+  .btn-stop { background: var(--error); }
+
+  /* ---- Text Mode Toggle ---- */
+  .text-mode-btn {
+    font-size: 9px;
+    padding: 2px 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--warning);
+    cursor: pointer;
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .text-mode-btn:hover { background: var(--warning-dim); }
+  .text-mode-btn.as-image {
+    background: var(--success-dim);
+    color: var(--success);
+    border-color: rgba(78, 201, 176, 0.3);
+  }
+
+  /* ---- FX Tag ---- */
+  .fx-tag {
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--purple-dim);
+    color: var(--purple);
+    flex-shrink: 0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+  <h3>UI 匯出到 Cocos</h3>
+
+  <div class="loading" id="loadingMsg">正在讀取圖層結構...</div>
+
+  <!-- Settings -->
+  <div class="settings-panel" id="settingsPanel" style="display:none;">
+    <div class="setting-row">
+      <label>匯出路徑</label>
+      <input type="text" id="outputPath" placeholder="Cocos 專案的 assets 子目錄路徑" />
+    </div>
+    <div class="setting-row">
+      <label>子資料夾</label>
+      <input type="text" id="subFolder" value="ui-import" placeholder="匯出到 assets 下的子資料夾名稱" />
+    </div>
+    <div class="setting-row">
+      <label>縮放比例</label>
+      <input type="number" id="scaleRatio" value="1" min="0.1" max="4" step="0.1" style="width:60px;flex:none;" />
+      <span class="setting-hint">1 = 原尺寸, 0.5 = 縮小一半</span>
+    </div>
+    <div class="setting-row">
+      <label>文字字型</label>
+      <select id="fontMode">
+        <option value="arial">Arial (Cocos 預設)</option>
+        <option value="original">當前 PSD 字型</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Layer Tree -->
+  <div class="layer-tree-panel" id="treePanel" style="display:none;">
+    <div class="tree-header">
+      <span>圖層結構</span>
+      <div>
+        <button onclick="selectAll(true)">全選</button>
+        <button onclick="selectAll(false)">取消全選</button>
+      </div>
+    </div>
+    <div id="treeContainer"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-panel" id="progressPanel">
+    <div class="progress-text" id="progressText">匯出中...</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+    <button class="btn btn-stop" style="margin-top:8px;" onclick="stopExport()">STOP 停止匯出</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-panel" id="resultPanel">
+    <strong>匯出完成！</strong>
+    <div id="resultDetails"></div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row" id="btnRow" style="display:none;">
+    <button class="btn btn-primary" onclick="refreshTree()">檢查</button>
+    <button class="btn btn-success" id="exportBtn" onclick="startExport()">匯出到 Cocos</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <!-- Log Modal -->
+  <div class="log-overlay" id="logOverlay">
+    <div class="log-modal">
+      <div class="log-modal-header">
+        <span>⚠ 圖層限制報告</span>
+        <button class="log-modal-close" onclick="closeLogModal()">✕</button>
+      </div>
+      <div class="log-modal-body" id="logModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // PostMessage Bridge
+    // ============================================
+    var callCounter = 0;
+    var pendingCalls = {};
+
+    function callPsApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        var callId = 'call_' + (++callCounter);
+        pendingCalls[callId] = { resolve: resolve, reject: reject };
+        window.parent.postMessage({
+          type: 'ps-api', action: action, params: params || {}, callId: callId
+        }, '*');
+        setTimeout(function () {
+          if (pendingCalls[callId]) { delete pendingCalls[callId]; reject('Timeout'); }
+        }, 60000);
+      });
+    }
+
+    function callFramework(type, data) {
+      return new Promise(function (resolve, reject) {
+        var callId = 'call_' + (++callCounter);
+        pendingCalls[callId] = { resolve: resolve, reject: reject };
+        data.callId = callId;
+        data.type = type;
+        window.parent.postMessage(data, '*');
+        setTimeout(function () {
+          if (pendingCalls[callId]) { delete pendingCalls[callId]; reject('Timeout: ' + type); }
+        }, 30000);
+      });
+    }
+
+    window.addEventListener('message', function (event) {
+      var data = event.data;
+      if (!data || data.type !== 'ps-api-response') return;
+      var p = pendingCalls[data.callId];
+      if (!p) return;
+      delete pendingCalls[data.callId];
+      if (data.error) p.reject(data.error); else p.resolve(data.result);
+    });
+
+    function parseResult(result) {
+      var d = (typeof result === 'string') ? JSON.parse(result) : result;
+      if (d.error) throw d.error;
+      return d;
+    }
+
+    // ============================================
+    // State
+    // ============================================
+    var layerTree = [];
+    var docInfo = null;
+    var flatLayers = []; // flat list for checkbox tracking
+    var exportCancelled = false;
+
+    var loadingMsg = document.getElementById('loadingMsg');
+    var settingsPanel = document.getElementById('settingsPanel');
+    var treePanel = document.getElementById('treePanel');
+    var treeContainer = document.getElementById('treeContainer');
+    var progressPanel = document.getElementById('progressPanel');
+    var progressText = document.getElementById('progressText');
+    var progressBar = document.getElementById('progressBar');
+    var resultPanel = document.getElementById('resultPanel');
+    var resultDetails = document.getElementById('resultDetails');
+    var btnRow = document.getElementById('btnRow');
+    var statusEl = document.getElementById('status');
+
+    function setStatus(msg) { statusEl.textContent = msg; }
+
+    // ============================================
+    // Load layer tree on open
+    // ============================================
+    refreshTree();
+
+    function refreshTree() {
+      loadingMsg.style.display = 'block';
+      settingsPanel.style.display = 'none';
+      treePanel.style.display = 'none';
+      btnRow.style.display = 'none';
+      resultPanel.style.display = 'none';
+      progressPanel.style.display = 'none';
+
+      callPsApi('getLayerTree').then(function (result) {
+        var data = parseResult(result);
+        docInfo = data.document;
+        layerTree = data.layers || [];
+        flatLayers = [];
+
+        // DPI 檢查：建議 72 DPI，非 72 顯示警告但不阻止匯出
+        var dpi = docInfo.resolution || docInfo.dpi || 72;
+        if (dpi !== 72) {
+          alert('⚠ 文件 DPI 為 ' + dpi + '，建議改為 72 DPI。\n\n調整方式：\n影像 → 影像尺寸 → 解析度改為 72 像素/英吋\n（取消勾選「重新取樣」以避免改變畫布像素尺寸）');
+        }
+
+        loadingMsg.style.display = 'none';
+        settingsPanel.style.display = 'block';
+        treePanel.style.display = 'block';
+        btnRow.style.display = 'flex';
+
+        renderTree();
+        setStatus('文件: ' + docInfo.name + ' (' + docInfo.width + 'x' + docInfo.height + ') 72 DPI ✓');
+        showLogModal();
+      }).catch(function (err) {
+        loadingMsg.textContent = '讀取失敗: ' + err;
+      });
+    }
+
+    // ============================================
+    // Render layer tree with checkboxes
+    // ============================================
+    function renderTree() {
+      treeContainer.innerHTML = '';
+      flatLayers = [];
+
+      function renderNode(layer, container) {
+        var node = document.createElement('div');
+
+        var row = document.createElement('div');
+        row.className = 'tree-node';
+        row.style.paddingLeft = (layer.depth * 12) + 'px';
+
+        // Checkbox (adjustment layers can't be exported — disable)
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        if (layer.type === 'adjustment') {
+          cb.checked = false;
+          cb.disabled = true;
+        } else {
+          cb.checked = layer.visible && layer.type !== 'group';
+        }
+        cb.dataset.path = layer.path;
+        cb.dataset.layerType = layer.type;
+        row.appendChild(cb);
+
+        // Icon
+        var icon = document.createElement('span');
+        icon.className = 'icon';
+        if (layer.type === 'group') { icon.className += ' icon-grp'; icon.textContent = '📁'; }
+        else if (layer.type === 'text') { icon.className += ' icon-txt'; icon.textContent = 'T'; }
+        else if (layer.type === 'adjustment') { icon.textContent = '⊘'; }
+        else if (layer.clipped) { icon.className += ' icon-img'; icon.textContent = '⬇'; }
+        else { icon.className += ' icon-img'; icon.textContent = '🖼'; }
+        row.appendChild(icon);
+
+        // Name
+        var name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = layer.name;
+        name.title = layer.path + (layer.clipped ? ' [Clipping Mask]' : '') + (layer.smartObject ? ' [Smart Object]' : '');
+        row.appendChild(name);
+
+        // FX tag (if layer has effects)
+        if (layer.hasLayerFX) {
+          var fxTag = document.createElement('span');
+          fxTag.className = 'fx-tag';
+          fxTag.textContent = 'FX';
+          fxTag.title = (layer.layerFXList || []).join(', ');
+          row.appendChild(fxTag);
+        }
+
+        // Text mode toggle (C方案: text layers can export as Label or Image)
+        var textModeBtn = null;
+        if (layer.type === 'text') {
+          textModeBtn = document.createElement('button');
+          textModeBtn.className = 'text-mode-btn';
+          textModeBtn.textContent = 'T';
+          textModeBtn.title = '點擊切換: T=文字Label / 🖼=圖片Sprite';
+          textModeBtn.dataset.mode = 'text'; // default: always export as label
+          textModeBtn.onclick = function() {
+            if (this.dataset.mode === 'text') {
+              this.dataset.mode = 'image';
+              this.textContent = '🖼';
+              this.className = 'text-mode-btn as-image';
+            } else {
+              this.dataset.mode = 'text';
+              this.textContent = 'T';
+              this.className = 'text-mode-btn';
+            }
+          };
+          row.appendChild(textModeBtn);
+        }
+
+        // Type tag
+        var tag = document.createElement('span');
+        tag.className = 'type-tag';
+        if (layer.type === 'group') { tag.className += ' type-grp'; tag.textContent = '群組'; }
+        else if (layer.type === 'text') { tag.className += ' type-txt'; tag.textContent = '文字'; }
+        else if (layer.type === 'adjustment') { tag.style.cssText = 'background:var(--error-dim);color:var(--text-muted);'; tag.textContent = '調整'; }
+        else if (layer.clipped) { tag.className += ' type-img'; tag.textContent = '剪裁'; }
+        else { tag.className += ' type-img'; tag.textContent = '圖片'; }
+        row.appendChild(tag);
+
+        node.appendChild(row);
+        container.appendChild(node);
+
+        flatLayers.push({
+          path: layer.path,
+          type: layer.type,
+          name: layer.name,
+          bounds: layer.bounds || null,
+          text: layer.text || null,
+          depth: layer.depth,
+          opacity: layer.opacity,
+          visible: layer.visible,
+          clipped: layer.clipped || false,
+          blendMode: layer.blendMode || null,
+          smartObject: layer.smartObject || false,
+          hasLayerFX: layer.hasLayerFX || false,
+          layerFXList: layer.layerFXList || [],
+          checkbox: cb,
+          textModeBtn: textModeBtn
+        });
+
+        // Render children for groups
+        if (layer.children) {
+          for (var i = 0; i < layer.children.length; i++) {
+            renderNode(layer.children[i], container);
+          }
+        }
+      }
+
+      // layerTree is flat but has depth info + children inside groups
+      // The top-level items are in layerTree root array
+      for (var i = 0; i < layerTree.length; i++) {
+        if (layerTree[i].depth === 0) {
+          renderNode(layerTree[i], treeContainer);
+        }
+      }
+    }
+
+    function selectAll(checked) {
+      for (var i = 0; i < flatLayers.length; i++) {
+        if (flatLayers[i].type !== 'group') {
+          flatLayers[i].checkbox.checked = checked;
+        }
+      }
+    }
+
+    // ============================================
+    // Export logic
+    // ============================================
+    async function startExport() {
+      var outputBase = document.getElementById('outputPath').value.trim();
+      var subFolder = document.getElementById('subFolder').value.trim() || 'ui-import';
+      var scale = parseFloat(document.getElementById('scaleRatio').value) || 1;
+
+      if (!outputBase) {
+        alert('請填入 Cocos 專案的 assets 路徑');
+        return;
+      }
+
+      // Determine which leaves are selected
+      var selectedPaths = new Set();
+      for (var i = 0; i < flatLayers.length; i++) {
+        var fl = flatLayers[i];
+        if (fl.checkbox.checked && fl.type !== 'group') {
+          selectedPaths.add(fl.path);
+        }
+      }
+
+      if (selectedPaths.size === 0) {
+        alert('請至少勾選一個圖層');
+        return;
+      }
+
+      // Determine which groups are needed (ancestors of selected leaves)
+      var neededGroups = new Set();
+      selectedPaths.forEach(function (p) {
+        var parts = p.split('/');
+        for (var j = 1; j < parts.length; j++) {
+          neededGroups.add(parts.slice(0, j).join('/'));
+        }
+      });
+
+      // Build output directory path
+      var outDir = outputBase.replace(/\\/g, '/');
+      if (outDir.charAt(outDir.length - 1) !== '/') outDir += '/';
+      outDir += subFolder + '/';
+
+      // Create output directories via framework (with confirmation)
+      var imgDir = outDir + 'images/';
+      try {
+        await callFramework('mkdir', { dirPath: outDir });
+        await callFramework('mkdir', { dirPath: imgDir });
+      } catch (e) {
+        alert('建立目錄失敗: ' + e);
+        return;
+      }
+
+      // Show progress
+      progressPanel.style.display = 'block';
+      resultPanel.style.display = 'none';
+      document.getElementById('exportBtn').disabled = true;
+      exportCancelled = false;
+
+      var docW = docInfo.width;
+      var docH = docInfo.height;
+      var layoutNodes = [];
+      var exportedImages = 0;
+      var exportedTexts = 0;
+      var exportedGroups = 0;
+      var errors = [];
+      var exportIdx = 0;
+      var totalToExport = selectedPaths.size;
+      var usedFileNames = {}; // track used filenames to avoid duplicates
+
+      // Iterate ALL flatLayers in PSD order — groups + selected leaves interleaved
+      // This preserves the exact PSD sibling order in layout.json
+      for (var i = 0; i < flatLayers.length; i++) {
+        // Check cancel flag
+        if (exportCancelled) break;
+
+        var layer = flatLayers[i];
+        var pathParts = layer.path.split('/');
+        var parentPath = pathParts.slice(0, -1).join('/');
+
+        if (layer.type === 'group') {
+          // Only include groups that are ancestors of selected leaves
+          if (!neededGroups.has(layer.path)) continue;
+          layoutNodes.push({
+            name: layer.name,
+            path: layer.path,
+            parent: parentPath || null,
+            type: 'group'
+          });
+          exportedGroups++;
+          continue;
+        }
+
+        // Skip unchecked leaves
+        if (!selectedPaths.has(layer.path)) continue;
+
+        exportIdx++;
+        var progress = Math.round((exportIdx / totalToExport) * 100);
+        progressBar.style.width = progress + '%';
+        progressText.textContent = '匯出中... (' + exportIdx + '/' + totalToExport + ') ' + layer.name;
+
+        var nodeInfo = {
+          name: layer.name,
+          path: layer.path,
+          parent: parentPath || null,
+          type: layer.type,
+          opacity: layer.opacity / 100,
+          visible: layer.visible
+        };
+
+        // Clipping mask / blend mode metadata
+        if (layer.clipped) nodeInfo.clipped = true;
+        if (layer.blendMode && layer.blendMode !== 'NORMAL') nodeInfo.blendMode = layer.blendMode;
+
+        // Determine if text layer should export as image (C方案)
+        var textAsImage = false;
+        if (layer.type === 'text' && layer.textModeBtn && layer.textModeBtn.dataset.mode === 'image') {
+          textAsImage = true;
+        }
+
+        if (layer.type === 'image' || textAsImage) {
+          // Export as PNG (image layer, or text-as-image mode)
+          var safeName = layer.name.replace(/[\\/:*?"<>|]/g, '_').replace(/ /g, '-');
+          if (usedFileNames[safeName]) {
+            usedFileNames[safeName]++;
+            safeName = safeName + '_' + usedFileNames[safeName];
+          } else {
+            usedFileNames[safeName] = 1;
+          }
+          var pngPath = imgDir + safeName + '.png';
+
+          try {
+            var result = await callPsApi('exportLayerByPath', {
+              layerPath: layer.path,
+              outputPath: pngPath
+            });
+            var data = parseResult(result);
+
+            var bx = layer.bounds;
+            var cx = (bx.left + bx.width / 2 - docW / 2) * scale;
+            var cy = -(bx.top + bx.height / 2 - docH / 2) * scale;
+
+            nodeInfo.type = 'image'; // force type to image for text-as-image
+            nodeInfo.image = safeName + '.png';
+            nodeInfo.position = { x: Math.round(cx * 100) / 100, y: Math.round(cy * 100) / 100 };
+            nodeInfo.size = { width: Math.round(bx.width * scale), height: Math.round(bx.height * scale) };
+            if (textAsImage) nodeInfo.textAsImage = true; // mark for Cocos report
+            exportedImages++;
+          } catch (e) {
+            errors.push(layer.name + ': ' + e);
+            continue;
+          }
+
+        } else if (layer.type === 'text') {
+          // Export as Label
+          var bx = layer.bounds;
+          var cx = (bx.left + bx.width / 2 - docW / 2) * scale;
+          var cy = -(bx.top + bx.height / 2 - docH / 2) * scale;
+
+          var txtContent = (layer.text.content || '').replace(/\r\n/g, '\\n').replace(/[\r\n]/g, '\\n');
+          // host.jsx already returns px values, just apply scale
+          var txtFontSize = Math.round(layer.text.fontSize * scale);
+          var txtLineHeight = Math.round((layer.text.lineHeight || layer.text.fontSize * 1.2) * scale);
+
+          // Detect vertical text: PS bounds width < height AND width < 1.5 chars
+          var isVertical = (bx.width < bx.height) && (bx.width < layer.text.fontSize * 1.5);
+
+          // Font selection
+          var fontChoice = document.getElementById('fontMode').value;
+          var fontFamily = (fontChoice === 'arial') ? 'Arial' : (layer.text.fontName || 'Arial');
+
+          // Calculate content size
+          var labelW, labelH;
+          if (isVertical) {
+            // Vertical text: W = fontSize (1 char width), overflow RESIZE_HEIGHT
+            labelW = txtFontSize;
+            labelH = txtFontSize; // initial, will be resized by RESIZE_HEIGHT
+          } else {
+            var rawText = txtContent.replace(/\\n/g, '\n');
+            var lines = rawText.split('\n');
+            var maxChars = 0;
+            for (var li = 0; li < lines.length; li++) {
+              if (lines[li].length > maxChars) maxChars = lines[li].length;
+            }
+            labelW = Math.max(Math.round(bx.width * scale), Math.round(maxChars * txtFontSize * 0.8));
+            labelH = Math.max(Math.round(bx.height * scale), txtLineHeight * lines.length);
+          }
+
+          nodeInfo.position = { x: Math.round(cx * 100) / 100, y: Math.round(cy * 100) / 100 };
+          nodeInfo.size = { width: labelW, height: labelH };
+          nodeInfo.label = {
+            text: txtContent,
+            fontSize: txtFontSize,
+            fontFamily: fontFamily,
+            color: layer.text.color,
+            horizontalAlign: mapJustification(layer.text.justification),
+            lineHeight: txtLineHeight,
+            letterSpacing: Math.round((layer.text.letterSpacing || 0) * scale * 100) / 100,
+            isBold: layer.text.isBold || false,
+            isItalic: layer.text.isItalic || false,
+            isUnderline: layer.text.isUnderline || false,
+            isStrikethrough: layer.text.isStrikethrough || false,
+            isVertical: isVertical || false
+          };
+          // Warn about FX not carried into Label
+          if (layer.hasLayerFX) {
+            nodeInfo.label.hasLayerFX = true;
+            nodeInfo.label.layerFXList = layer.layerFXList;
+          }
+          exportedTexts++;
+        }
+
+        layoutNodes.push(nodeInfo);
+      }
+
+      // Build layout.json
+      var layout = {
+        version: '1.0.0',
+        generator: 'IGS ACD Art Tools',
+        document: {
+          name: docInfo.name,
+          width: Math.round(docW * scale),
+          height: Math.round(docH * scale),
+          scale: scale,
+          dpi: docInfo.resolution || docInfo.dpi || 72
+        },
+        nodes: layoutNodes
+      };
+
+      // Save layout.json via framework
+      var jsonStr = JSON.stringify(layout, null, 2);
+      var jsonPath = outDir + 'layout.json';
+
+      try {
+        await callFramework('save-text-file', {
+          filePath: jsonPath,
+          textContent: jsonStr
+        });
+      } catch (e) {
+        errors.push('layout.json 儲存失敗: ' + e);
+      }
+
+      // Cancelled — skip saving layout.json, show partial result
+      if (exportCancelled) {
+        progressPanel.style.display = 'none';
+        document.getElementById('exportBtn').disabled = false;
+        resultPanel.style.display = 'block';
+        resultPanel.style.background = 'var(--error-dim)';
+        resultPanel.style.borderColor = 'var(--error)';
+        resultDetails.innerHTML =
+          '<strong style="color:var(--error);">匯出已停止</strong><br>' +
+          '已匯出圖片: ' + exportedImages + ' 個<br>' +
+          '已匯出文字: ' + exportedTexts + ' 個<br>' +
+          '已匯出群組: ' + exportedGroups + ' 個<br>' +
+          '<span style="color:#ff8a80;">注意：layout.json 未儲存，已匯出的 PNG 仍保留在資料夾中。</span>';
+        setStatus('匯出已被使用者停止');
+        return;
+      }
+
+      // Done
+      progressPanel.style.display = 'none';
+      document.getElementById('exportBtn').disabled = false;
+
+      resultPanel.style.display = 'block';
+      resultPanel.style.background = 'var(--success-dim)';
+      resultPanel.style.borderColor = 'var(--success)';
+      resultDetails.innerHTML =
+        '圖片: ' + exportedImages + ' 個<br>' +
+        '文字: ' + exportedTexts + ' 個<br>' +
+        '群組: ' + exportedGroups + ' 個<br>' +
+        '輸出: ' + outDir + '<br>' +
+        (errors.length > 0 ? '<br><span style="color:#ff8a80;">錯誤: ' + errors.join(', ') + '</span>' : '');
+
+      setStatus('匯出完成！共 ' + (exportedImages + exportedTexts) + ' 個元素');
+    }
+
+    function mapJustification(j) {
+      if (!j) return 'LEFT';
+      var s = String(j).toUpperCase();
+      if (s.indexOf('CENTER') !== -1) return 'CENTER';
+      if (s.indexOf('RIGHT') !== -1) return 'RIGHT';
+      return 'LEFT';
+    }
+
+    function sleep(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    // ============================================
+    // Stop Export
+    // ============================================
+    function stopExport() {
+      exportCancelled = true;
+    }
+
+    // ============================================
+    // Log Modal — unsupported layers report
+    // ============================================
+    function showLogModal() {
+      var adjustments = [];
+      var clipped = [];
+      var smartObjects = [];
+      var blendModes = [];
+      var strikethrough = [];
+      var fxLayers = [];
+
+      for (var i = 0; i < flatLayers.length; i++) {
+        var fl = flatLayers[i];
+        if (fl.type === 'adjustment') {
+          adjustments.push(fl);
+        }
+        if (fl.clipped) {
+          clipped.push(fl);
+        }
+        if (fl.smartObject) {
+          smartObjects.push(fl);
+        }
+        if (fl.blendMode && fl.blendMode !== 'NORMAL') {
+          blendModes.push(fl);
+        }
+        if (fl.type === 'text' && fl.text && fl.text.isStrikethrough) {
+          strikethrough.push(fl);
+        }
+        if (fl.hasLayerFX) {
+          fxLayers.push(fl);
+        }
+      }
+
+      var body = document.getElementById('logModalBody');
+      var html = '';
+
+      if (adjustments.length === 0 && clipped.length === 0 && smartObjects.length === 0 && blendModes.length === 0 && strikethrough.length === 0 && fxLayers.length === 0) {
+        html = '<div class="log-ok">✓ 所有圖層皆可正常匯出，就緒！</div>';
+      } else {
+        if (adjustments.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">⊘ 調整圖層（無法匯出，已自動跳過）— ' + adjustments.length + ' 個</div>';
+          for (var i = 0; i < adjustments.length; i++) {
+            html += '<div class="log-item">• ' + esc(adjustments[i].name) + ' <span class="log-path">' + esc(adjustments[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+        if (fxLayers.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">✦ 圖層效果 FX（文字用 Label 不帶 FX，可切換為圖片匯出）— ' + fxLayers.length + ' 個</div>';
+          for (var i = 0; i < fxLayers.length; i++) {
+            var fxNames = (fxLayers[i].layerFXList || []).join(', ');
+            html += '<div class="log-item">• ' + esc(fxLayers[i].name) + ' <span style="color:#ce93d8;">[' + esc(fxNames) + ']</span> <span class="log-path">' + esc(fxLayers[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+        if (clipped.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">⬇ 剪裁遮色片（圖片/文字皆可能，匯出為一般圖層，遮罩關係遺失）— ' + clipped.length + ' 個</div>';
+          for (var i = 0; i < clipped.length; i++) {
+            var clipType = clipped[i].type === 'text' ? '[文字]' : '[圖片]';
+            html += '<div class="log-item">• ' + clipType + ' ' + esc(clipped[i].name) + ' <span class="log-path">' + esc(clipped[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+        if (smartObjects.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">◆ 智慧型物件（匯出為平面化 PNG，內部結構遺失）— ' + smartObjects.length + ' 個</div>';
+          for (var i = 0; i < smartObjects.length; i++) {
+            html += '<div class="log-item">• ' + esc(smartObjects[i].name) + ' <span class="log-path">' + esc(smartObjects[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+        if (blendModes.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">◐ 混合模式（Cocos 僅支援 Normal，其他需自訂 Shader）— ' + blendModes.length + ' 個</div>';
+          for (var i = 0; i < blendModes.length; i++) {
+            html += '<div class="log-item">• ' + esc(blendModes[i].name) + ' <span style="color:#ff9800;">(' + esc(blendModes[i].blendMode) + ')</span> <span class="log-path">' + esc(blendModes[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+        if (strikethrough.length > 0) {
+          html += '<div class="log-section"><div class="log-section-title">S̶ 刪除線文字（cc.Label 不支援刪除線）— ' + strikethrough.length + ' 個</div>';
+          for (var i = 0; i < strikethrough.length; i++) {
+            html += '<div class="log-item">• ' + esc(strikethrough[i].name) + ' <span class="log-path">' + esc(strikethrough[i].path) + '</span></div>';
+          }
+          html += '</div>';
+        }
+      }
+
+
+      var hasIssues = (adjustments.length + clipped.length + smartObjects.length + blendModes.length + strikethrough.length + fxLayers.length) > 0;
+      var headerEl = document.querySelector('.log-modal-header span');
+      if (hasIssues) {
+        headerEl.textContent = '⚠ 圖層限制報告';
+        headerEl.style.color = '#ff9800';
+      } else {
+        headerEl.textContent = '✓ 圖層檢查';
+        headerEl.style.color = '#4caf50';
+      }
+
+      body.innerHTML = html;
+      document.getElementById('logOverlay').classList.add('show');
+    }
+
+    function closeLogModal() {
+      document.getElementById('logOverlay').classList.remove('show');
+    }
+
+    function esc(s) {
+      var d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

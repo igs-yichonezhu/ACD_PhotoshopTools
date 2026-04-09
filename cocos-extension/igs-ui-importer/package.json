@@ -1,0 +1,22 @@
+{
+    "name": "igs-ui-importer",
+    "version": "2.0.0",
+    "package_version": 2,
+    "description": "Import PSD UI layout from IGS ACD Art Tools - generates Prefab directly",
+    "main": "./dist/main.js",
+    "author": "IGS ACD",
+    "editor": ">=3.6.0",
+    "contributions": {
+        "menu": [
+            {
+                "path": "IGS Tools/匯入 PSD UI Layout",
+                "message": "import-layout"
+            }
+        ],
+        "messages": {
+            "import-layout": {
+                "methods": ["importLayout"]
+            }
+        }
+    }
+}

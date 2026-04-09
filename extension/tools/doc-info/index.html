@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>文件資訊</title>
+    <style>
+        :root {
+            --bg: #2b2b2b;
+            --bg-card: #3a3a3a;
+            --text: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #2d8ceb;
+            --border: #505050;
+        }
+
+        body {
+            font-family: "Adobe Clean", "Segoe UI", sans-serif;
+            font-size: 12px;
+            color: var(--text);
+            background: var(--bg);
+            padding: 12px;
+            margin: 0;
+        }
+
+        h3 {
+            font-size: 13px;
+            margin: 0 0 12px 0;
+            color: var(--accent);
+        }
+
+        .info-group {
+            background: var(--bg-card);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .info-group-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        .btn {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .status {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h3>文件資訊</h3>
+    <div id="content">
+        <div class="status">點擊下方按鈕取得文件資訊</div>
+    </div>
+    <button class="btn" onclick="fetchDocInfo()">取得文件資訊</button>
+    <button class="btn" onclick="fetchLayers()" style="background:#3a3a3a; border:1px solid #505050; margin-top:6px;">取得圖層列表</button>
+
+    <script>
+        /**
+         * IGS ACD Art Tools - Tool SDK Helper
+         * 工具用這個 helper 與框架溝通
+         */
+        var callCounter = 0;
+        var pendingCalls = {};
+
+        function callPsApi(action, params) {
+            return new Promise(function (resolve, reject) {
+                var callId = 'call_' + (++callCounter);
+                pendingCalls[callId] = { resolve: resolve, reject: reject };
+
+                window.parent.postMessage({
+                    type: 'ps-api',
+                    action: action,
+                    params: params || {},
+                    callId: callId
+                }, '*');
+
+                // Timeout after 10s
+                setTimeout(function () {
+                    if (pendingCalls[callId]) {
+                        delete pendingCalls[callId];
+                        reject('Request timeout');
+                    }
+                }, 10000);
+            });
+        }
+
+        window.addEventListener('message', function (event) {
+            var data = event.data;
+            if (!data || data.type !== 'ps-api-response') return;
+
+            var pending = pendingCalls[data.callId];
+            if (!pending) return;
+
+            delete pendingCalls[data.callId];
+
+            if (data.error) {
+                pending.reject(data.error);
+            } else {
+                pending.resolve(data.result);
+            }
+        });
+
+        // ========================================
+
+        function fetchDocInfo() {
+            var content = document.getElementById('content');
+            content.innerHTML = '<div class="status">載入中...</div>';
+
+            callPsApi('getActiveDocument').then(function (result) {
+                var data = typeof result === 'string' ? JSON.parse(result) : result;
+
+                if (data.error) {
+                    content.innerHTML = '<div class="status">' + data.error + '</div>';
+                    return;
+                }
+
+                var info = data.data;
+                content.innerHTML =
+                    '<div class="info-group">' +
+                        '<div class="info-group-title">基本資訊</div>' +
+                        '<div class="info-row"><span class="info-label">檔案名稱</span><span class="info-value">' + info.name + '</span></div>' +
+                        '<div class="info-row"><span class="info-label">已儲存</span><span class="info-value">' + (info.saved ? '是' : '否') + '</span></div>' +
+                    '</div>' +
+                    '<div class="info-group">' +
+                        '<div class="info-group-title">尺寸</div>' +
+                        '<div class="info-row"><span class="info-label">寬度</span><span class="info-value">' + info.width + ' px</span></div>' +
+                        '<div class="info-row"><span class="info-label">高度</span><span class="info-value">' + info.height + ' px</span></div>' +
+                        '<div class="info-row"><span class="info-label">解析度</span><span class="info-value">' + info.resolution + ' dpi</span></div>' +
+                    '</div>' +
+                    '<div class="info-group">' +
+                        '<div class="info-group-title">其他</div>' +
+                        '<div class="info-row"><span class="info-label">色彩模式</span><span class="info-value">' + info.mode + '</span></div>' +
+                        '<div class="info-row"><span class="info-label">圖層數量</span><span class="info-value">' + info.layerCount + '</span></div>' +
+                    '</div>';
+
+            }).catch(function (err) {
+                content.innerHTML = '<div class="status">錯誤：' + err + '</div>';
+            });
+        }
+
+        function fetchLayers() {
+            var content = document.getElementById('content');
+            content.innerHTML = '<div class="status">載入中...</div>';
+
+            callPsApi('getLayers').then(function (result) {
+                var data = typeof result === 'string' ? JSON.parse(result) : result;
+
+                if (data.error) {
+                    content.innerHTML = '<div class="status">' + data.error + '</div>';
+                    return;
+                }
+
+                var layers = data.data;
+                var html = '<div class="info-group"><div class="info-group-title">圖層列表 (' + layers.length + ')</div>';
+
+                layers.forEach(function (layer) {
+                    var indent = layer.depth * 16;
+                    var visibility = layer.visible ? '👁' : '—';
+                    html += '<div class="info-row" style="padding-left:' + indent + 'px">' +
+                        '<span class="info-label">' + visibility + ' ' + layer.name + '</span>' +
+                        '<span class="info-value">' + Math.round(layer.opacity) + '%</span>' +
+                    '</div>';
+                });
+
+                html += '</div>';
+                content.innerHTML = html;
+
+            }).catch(function (err) {
+                content.innerHTML = '<div class="status">錯誤：' + err + '</div>';
+            });
+        }
+    </script>
+
+</body>
+</html>

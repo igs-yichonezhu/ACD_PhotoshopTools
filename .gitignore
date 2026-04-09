@@ -1,0 +1,29 @@
+# ============================================
+# IGS ACD Art Tools - .gitignore
+# ============================================
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Node
+node_modules/
+
+# Config (contains GitHub PAT - DO NOT commit)
+extension/config.json
+config.json
+
+# Build output
+installer/*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp / log files
+*.tmp
+*.log

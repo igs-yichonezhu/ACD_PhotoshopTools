@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGS ACD Art Tools</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <!-- ========== Home View ========== -->
+    <div id="homeView" class="home-view">
+        <!-- Update Banner -->
+        <div id="updateBanner" class="update-banner">
+            <span class="update-banner-text" id="updateText">新版本可用 v0.0.0</span>
+            <button class="update-btn" id="updateBtn" onclick="App.updater.performUpdate()">更新</button>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <span>IGS ACD Art Tools</span>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="App.updater.checkForUpdates(true)" title="檢查更新">&#x21bb;</button>
+                <button class="header-btn" onclick="App.showSettings()" title="設定">&#x2699;</button>
+            </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="filter-bar" id="filterBar">
+            <button class="filter-btn active" data-category="all" onclick="App.filterTools('all', this)">全部</button>
+        </div>
+
+        <!-- Tool Cards Grid -->
+        <div class="tools-container">
+            <div class="tools-grid" id="toolsGrid">
+                <!-- Tools will be dynamically loaded here -->
+            </div>
+            <div class="empty-state" id="emptyState" style="display:none;">
+                <div class="empty-state-icon">&#x1f4e6;</div>
+                <div>沒有找到工具</div>
+                <div style="font-size:10px;">請確認 tools/ 資料夾內有工具目錄</div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="statusText">就緒</span>
+            <span id="versionText">v1.0.0</span>
+        </div>
+    </div>
+
+    <!-- ========== Tool View (iframe) ========== -->
+    <div id="toolView" class="tool-view">
+        <div class="tool-header">
+            <button class="back-btn" onclick="App.goHome()">
+                &#x2190; <span>返回</span>
+            </button>
+            <span class="tool-header-title" id="toolTitle"></span>
+        </div>
+        <div class="tool-iframe-container">
+            <iframe id="toolIframe" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+        </div>
+    </div>
+
+    <!-- ========== Settings Modal ========== -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-title">設定</div>
+            <div class="modal-field">
+                <label>GitHub Personal Access Token</label>
+                <input type="password" id="inputToken" placeholder="ghp_xxxxxxxxxxxx">
+            </div>
+            <div class="modal-field">
+                <label>GitHub Repository (owner/repo)</label>
+                <input type="text" id="inputRepo" placeholder="your-org/photoshop-plugin">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn" onclick="App.hideSettings()">取消</button>
+                <button class="modal-btn primary" onclick="App.saveSettings()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./js/CSInterface.js"></script>
+    <script src="./js/ps-bridge.js"></script>
+    <script src="./js/updater.js"></script>
+    <script src="./js/main.js"></script>
+
+</body>
+</html>

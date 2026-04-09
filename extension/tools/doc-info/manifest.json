@@ -1,0 +1,9 @@
+{
+    "name": "文件資訊",
+    "icon": "icon.png",
+    "entry": "index.html",
+    "version": "1.0.0",
+    "description": "顯示目前文件的詳細資訊（尺寸、圖層、色彩模式等）",
+    "category": ["image", "workflow"],
+    "minPsVersion": "20.0"
+}

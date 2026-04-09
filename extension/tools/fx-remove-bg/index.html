@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>特效去背</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    font-family: "Adobe Clean", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    padding: 10px;
+    margin: 0;
+    font-size: 12px;
+  }
+
+  h3 {
+    font-size: 13px;
+    color: #2d8ceb;
+    margin: 0 0 6px 0;
+    text-align: center;
+  }
+
+  .layer-name {
+    font-size: 11px;
+    color: #ff9800;
+    margin-bottom: 8px;
+    min-height: 14px;
+    text-align: center;
+  }
+
+  /* ---- Tab Bar ---- */
+  .tab-bar {
+    display: flex;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #555;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 7px 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: #3a3a3a;
+    color: #aaa;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab-btn:hover { background: #444; color: #ddd; }
+  .tab-btn.active { background: #2d8ceb; color: #fff; }
+
+  /* ---- Controls Panel ---- */
+  .controls-panel {
+    display: none;
+    background-color: #323232;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    margin-bottom: 8px;
+  }
+
+  .control-row {
+    margin-bottom: 8px;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+
+  .control-row label {
+    font-size: 11px;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+    color: #ccc;
+  }
+
+  /* ---- Background Color Picker ---- */
+  .bg-color-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .bg-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    border: 2px solid #666;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .bg-swatch:hover { border-color: #aaa; }
+
+  .bg-preset {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: #3a3a3a;
+    color: #ddd;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .bg-preset:hover { background: #4a4a4a; }
+  .bg-preset.active { border-color: #2d8ceb; background: #2a3e55; }
+
+  .eyedropper-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: #3a3a3a;
+    color: #ddd;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .eyedropper-btn:hover { background: #4a4a4a; }
+  .eyedropper-btn.active { border-color: #ff9800; background: #4a3a20; color: #ff9800; }
+
+  .bg-hex-input {
+    width: 70px;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-family: monospace;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: #3a3a3a;
+    color: #ddd;
+    text-align: center;
+  }
+
+  /* ---- Sliders ---- */
+  input[type="range"] {
+    width: 100%;
+    margin-top: 2px;
+    accent-color: #2d8ceb;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .slider-value {
+    font-size: 11px;
+    color: #2d8ceb;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: right;
+  }
+
+  /* ---- Preview ---- */
+  .preview-wrapper {
+    display: none;
+    border: 1px solid #444;
+    padding: 6px;
+    background-color: #323232;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+
+  canvas {
+    max-width: 100%;
+    max-height: 350px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .transparent-bg {
+    background-image:
+      linear-gradient(45deg, #555 25%, transparent 25%),
+      linear-gradient(-45deg, #555 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #555 75%),
+      linear-gradient(-45deg, transparent 75%, #555 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #3a3a3a;
+  }
+
+  .eyedropper-cursor { cursor: crosshair !important; }
+
+  .eyedropper-hint {
+    display: none;
+    text-align: center;
+    font-size: 11px;
+    color: #ff9800;
+    padding: 4px;
+    background: rgba(255,152,0,0.1);
+    border-radius: 3px;
+    margin-bottom: 6px;
+  }
+
+  /* ---- Apply Options ---- */
+  .apply-options {
+    display: none;
+    background: #323232;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .apply-options label {
+    font-size: 11px;
+    color: #ccc;
+    display: block;
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+  .apply-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .apply-radio-group label {
+    font-weight: normal;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 4px;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .apply-radio-group label:hover { background: #3a3a3a; }
+  .apply-radio-group input[type="radio"] { accent-color: #2d8ceb; margin: 0; }
+
+  /* ---- Buttons ---- */
+  .btn-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 7px 14px;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    border: none;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background-color: #2d8ceb; }
+  .btn-success { background-color: #4caf50; }
+  .btn-orange  { background-color: #ff9800; }
+
+  .status {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #a0a0a0;
+    min-height: 16px;
+    text-align: center;
+  }
+
+  .loading {
+    color: #2d8ceb;
+    padding: 20px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .error-box {
+    display: none;
+    background: #3a2020;
+    border: 1px solid #f44336;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .error-box p {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: #ff8a80;
+  }
+
+  .mode-desc {
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 6px;
+    min-height: 14px;
+  }
+</style>
+</head>
+<body>
+
+  <h3>特效去背</h3>
+  <div class="layer-name" id="layerName"></div>
+
+  <div class="loading" id="loadingMsg">正在抓取圖層...</div>
+
+  <div class="error-box" id="errorBox">
+    <p id="errorText"></p>
+    <button class="btn btn-primary" onclick="grabCurrentLayer()">重試</button>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar" id="tabBar" style="display:none;">
+    <button class="tab-btn active" data-mode="luminance" onclick="switchMode('luminance', this)">亮度模式</button>
+    <button class="tab-btn" data-mode="channel" onclick="switchMode('channel', this)">通道模式</button>
+  </div>
+
+  <div class="mode-desc" id="modeDesc" style="display:none;">以亮度計算透明度，適合單色特效</div>
+
+  <!-- Controls -->
+  <div class="controls-panel" id="controlsPanel">
+    <!-- Background Color -->
+    <div class="control-row">
+      <label>底色</label>
+      <div class="bg-color-row">
+        <div class="bg-swatch" id="bgSwatch" style="background:#000;" title="目前底色"></div>
+        <button class="bg-preset active" data-color="#000000" onclick="setBgPreset('#000000', this)">黑色</button>
+        <button class="bg-preset" data-color="#ffffff" onclick="setBgPreset('#ffffff', this)">白色</button>
+        <button class="eyedropper-btn" id="eyedropperBtn" onclick="toggleEyedropper()">吸取</button>
+        <input type="text" class="bg-hex-input" id="bgHexInput" value="#000000" maxlength="7"
+               onchange="setBgFromHex(this.value)" title="輸入 HEX 色碼">
+      </div>
+    </div>
+
+    <!-- Threshold Slider -->
+    <div class="control-row">
+      <div class="slider-header">
+        <label for="thresholdSlider">去背程度</label>
+        <span class="slider-value" id="thresholdValue">0</span>
+      </div>
+      <input type="range" id="thresholdSlider" min="0" max="255" value="0">
+    </div>
+
+    <!-- Tolerance Slider -->
+    <div class="control-row">
+      <div class="slider-header">
+        <label for="toleranceSlider">容差範圍</label>
+        <span class="slider-value" id="toleranceValue">0</span>
+      </div>
+      <input type="range" id="toleranceSlider" min="0" max="255" value="0">
+    </div>
+  </div>
+
+  <!-- Eyedropper hint -->
+  <div class="eyedropper-hint" id="eyedropperHint">點擊圖片吸取底色，按 ESC 取消</div>
+
+  <!-- Preview -->
+  <div class="preview-wrapper" id="previewWrapper">
+    <canvas id="canvasProcessed" class="transparent-bg"></canvas>
+  </div>
+
+  <!-- Hidden: stores original pixel data -->
+  <canvas id="canvasOriginal" style="display:none;"></canvas>
+
+  <!-- Apply Options -->
+  <div class="apply-options" id="applyOptions">
+    <label>套用方式</label>
+    <div class="apply-radio-group">
+      <label><input type="radio" name="applyMode" value="newLayer" checked> 新圖層</label>
+      <label><input type="radio" name="applyMode" value="replace"> 取代原圖層</label>
+      <label><input type="radio" name="applyMode" value="mask"> 套用為遮罩</label>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="btn-row" id="actionBtns" style="display:none;">
+    <button class="btn btn-primary" onclick="grabCurrentLayer()">重新抓取</button>
+    <button class="btn btn-success" onclick="applyResult()">套用</button>
+    <button class="btn btn-orange" onclick="downloadPNG()">下載 PNG</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <script>
+    // ============================================
+    // PostMessage Bridge
+    // ============================================
+    var callCounter = 0;
+    var pendingCalls = {};
+
+    function callPsApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        var callId = 'call_' + (++callCounter);
+        pendingCalls[callId] = { resolve: resolve, reject: reject };
+        window.parent.postMessage({
+          type: 'ps-api',
+          action: action,
+          params: params || {},
+          callId: callId
+        }, '*');
+        setTimeout(function () {
+          if (pendingCalls[callId]) {
+            delete pendingCalls[callId];
+            reject('Request timeout');
+          }
+        }, 30000);
+      });
+    }
+
+    window.addEventListener('message', function (event) {
+      var data = event.data;
+      if (!data || data.type !== 'ps-api-response') return;
+      var pending = pendingCalls[data.callId];
+      if (!pending) return;
+      delete pendingCalls[data.callId];
+      if (data.error) pending.reject(data.error);
+      else pending.resolve(data.result);
+    });
+
+    function parseResult(result) {
+      var data = (typeof result === 'string') ? JSON.parse(result) : result;
+      if (data.error) throw data.error;
+      return data;
+    }
+
+    // ============================================
+    // DOM References
+    // ============================================
+    var canvasOriginal  = document.getElementById('canvasOriginal');
+    var ctxOriginal     = canvasOriginal.getContext('2d');
+    var canvasProcessed = document.getElementById('canvasProcessed');
+    var ctxProcessed    = canvasProcessed.getContext('2d');
+
+    var controlsPanel   = document.getElementById('controlsPanel');
+    var thresholdSlider = document.getElementById('thresholdSlider');
+    var thresholdValue  = document.getElementById('thresholdValue');
+    var toleranceSlider = document.getElementById('toleranceSlider');
+    var toleranceValue  = document.getElementById('toleranceValue');
+    var previewWrapper  = document.getElementById('previewWrapper');
+    var actionBtns      = document.getElementById('actionBtns');
+    var applyOptions    = document.getElementById('applyOptions');
+    var statusEl        = document.getElementById('status');
+    var layerNameEl     = document.getElementById('layerName');
+    var loadingMsg      = document.getElementById('loadingMsg');
+    var errorBox        = document.getElementById('errorBox');
+    var errorText       = document.getElementById('errorText');
+    var tabBar          = document.getElementById('tabBar');
+    var modeDesc        = document.getElementById('modeDesc');
+    var bgSwatch        = document.getElementById('bgSwatch');
+    var bgHexInput      = document.getElementById('bgHexInput');
+    var eyedropperBtn   = document.getElementById('eyedropperBtn');
+    var eyedropperHint  = document.getElementById('eyedropperHint');
+
+    // ============================================
+    // State
+    // ============================================
+    var isImageLoaded = false;
+    var tempFilePath = '';
+    var currentLayerName = '';
+    var currentMode = 'luminance'; // 'luminance' | 'channel'
+    var eyedropperActive = false;
+
+    // Background color (RGB)
+    var bgColor = { r: 0, g: 0, b: 0 };
+
+    function setStatus(msg) { statusEl.textContent = msg; }
+
+    // Friendly error messages
+    var ERROR_MESSAGES = {
+      'NO_DOCUMENT': '請先開啟一個文件 (PSD/PNG/JPG)',
+      'NO_LAYER': '找不到作用中的圖層，請在圖層面板選取一個圖層',
+      'EMPTY_GROUP': '選取的是空的圖層群組，請選取一個有內容的圖層',
+      'EMPTY_LAYER': '選取的圖層沒有可見內容，請選取一個有內容的圖層'
+    };
+
+    function showError(err) {
+      loadingMsg.style.display = 'none';
+      tabBar.style.display = 'none';
+      modeDesc.style.display = 'none';
+      controlsPanel.style.display = 'none';
+      previewWrapper.style.display = 'none';
+      applyOptions.style.display = 'none';
+      actionBtns.style.display = 'none';
+      var msg = ERROR_MESSAGES[err] || err;
+      errorText.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+    }
+
+    // ============================================
+    // Mode Switching
+    // ============================================
+    function switchMode(mode, btnEl) {
+      currentMode = mode;
+
+      // Update tab UI
+      var tabs = document.querySelectorAll('.tab-btn');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+      if (btnEl) btnEl.classList.add('active');
+
+      // Update description
+      if (mode === 'luminance') {
+        modeDesc.textContent = '以亮度計算透明度，適合單色特效';
+      } else {
+        modeDesc.textContent = '以 RGB 通道分離計算，保色效果更佳';
+      }
+
+      processImage();
+    }
+
+    // ============================================
+    // Background Color
+    // ============================================
+    function updateBgColorUI() {
+      var hex = rgbToHex(bgColor.r, bgColor.g, bgColor.b);
+      bgSwatch.style.background = hex;
+      bgHexInput.value = hex;
+
+      // Update preset button states
+      var presets = document.querySelectorAll('.bg-preset');
+      for (var i = 0; i < presets.length; i++) {
+        presets[i].classList.remove('active');
+        if (presets[i].dataset.color && presets[i].dataset.color.toLowerCase() === hex.toLowerCase()) {
+          presets[i].classList.add('active');
+        }
+      }
+    }
+
+    function setBgPreset(hex, btnEl) {
+      var c = hexToRgb(hex);
+      if (c) {
+        bgColor = c;
+        updateBgColorUI();
+        processImage();
+      }
+      exitEyedropper();
+    }
+
+    function setBgFromHex(hex) {
+      hex = hex.trim();
+      if (hex.charAt(0) !== '#') hex = '#' + hex;
+      var c = hexToRgb(hex);
+      if (c) {
+        bgColor = c;
+        updateBgColorUI();
+        processImage();
+      }
+    }
+
+    function toggleEyedropper() {
+      if (eyedropperActive) {
+        exitEyedropper();
+      } else {
+        eyedropperActive = true;
+        eyedropperBtn.classList.add('active');
+        canvasProcessed.classList.add('eyedropper-cursor');
+        eyedropperHint.style.display = 'block';
+      }
+    }
+
+    function exitEyedropper() {
+      eyedropperActive = false;
+      eyedropperBtn.classList.remove('active');
+      canvasProcessed.classList.remove('eyedropper-cursor');
+      eyedropperHint.style.display = 'none';
+    }
+
+    // Click on canvas to pick color (from ORIGINAL image)
+    canvasProcessed.addEventListener('click', function (e) {
+      if (!eyedropperActive || !isImageLoaded) return;
+
+      var rect = canvasProcessed.getBoundingClientRect();
+      var scaleX = canvasOriginal.width / rect.width;
+      var scaleY = canvasOriginal.height / rect.height;
+      var x = Math.floor((e.clientX - rect.left) * scaleX);
+      var y = Math.floor((e.clientY - rect.top) * scaleY);
+
+      // Clamp
+      x = Math.max(0, Math.min(canvasOriginal.width - 1, x));
+      y = Math.max(0, Math.min(canvasOriginal.height - 1, y));
+
+      var pixel = ctxOriginal.getImageData(x, y, 1, 1).data;
+      bgColor = { r: pixel[0], g: pixel[1], b: pixel[2] };
+      updateBgColorUI();
+      exitEyedropper();
+      processImage();
+    });
+
+    // ESC to cancel eyedropper
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && eyedropperActive) exitEyedropper();
+    });
+
+    // ============================================
+    // Color Helpers
+    // ============================================
+    function rgbToHex(r, g, b) {
+      return '#' + toHex2(r) + toHex2(g) + toHex2(b);
+    }
+    function toHex2(n) {
+      var h = Math.round(n).toString(16);
+      return h.length === 1 ? '0' + h : h;
+    }
+    function hexToRgb(hex) {
+      var m = hex.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (!m) return null;
+      return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+    }
+
+    // ============================================
+    // Auto-grab on open
+    // ============================================
+    grabCurrentLayer();
+
+    function grabCurrentLayer() {
+      loadingMsg.style.display = 'block';
+      tabBar.style.display = 'none';
+      modeDesc.style.display = 'none';
+      controlsPanel.style.display = 'none';
+      previewWrapper.style.display = 'none';
+      applyOptions.style.display = 'none';
+      actionBtns.style.display = 'none';
+      hideError();
+      setStatus('');
+
+      callPsApi('exportActiveLayerAsPNG').then(function (result) {
+        var data;
+        try { data = parseResult(result); } catch(e) {
+          showError(String(e));
+          return;
+        }
+
+        tempFilePath = data.filePath;
+        currentLayerName = data.layerName;
+        layerNameEl.textContent = currentLayerName;
+
+        var img = new Image();
+        img.onload = function () {
+          loadingMsg.style.display = 'none';
+          tabBar.style.display = 'flex';
+          modeDesc.style.display = 'block';
+          controlsPanel.style.display = 'block';
+          previewWrapper.style.display = 'block';
+          applyOptions.style.display = 'block';
+          actionBtns.style.display = 'flex';
+
+          canvasOriginal.width = img.width;
+          canvasOriginal.height = img.height;
+          canvasProcessed.width = img.width;
+          canvasProcessed.height = img.height;
+
+          ctxOriginal.drawImage(img, 0, 0);
+          isImageLoaded = true;
+
+          // Reset sliders
+          thresholdSlider.value = 0;
+          thresholdValue.textContent = '0';
+          toleranceSlider.value = 0;
+          toleranceValue.textContent = '0';
+
+          processImage();
+        };
+        img.onerror = function () {
+          showError('Failed to load layer image');
+        };
+        img.src = 'file:///' + tempFilePath + '?t=' + Date.now();
+
+      }).catch(function (err) {
+        showError(String(err));
+      });
+    }
+
+    // ============================================
+    // Image Processing
+    // ============================================
+    var processTimer = null;
+
+    function processImage() {
+      if (!isImageLoaded) return;
+
+      // Debounce for slider dragging
+      if (processTimer) clearTimeout(processTimer);
+      processTimer = setTimeout(doProcess, 16);
+    }
+
+    function doProcess() {
+      var threshold = parseInt(thresholdSlider.value);
+      var tolerance = parseInt(toleranceSlider.value);
+      thresholdValue.textContent = threshold;
+      toleranceValue.textContent = tolerance;
+
+      var w = canvasOriginal.width;
+      var h = canvasOriginal.height;
+      var srcData = ctxOriginal.getImageData(0, 0, w, h);
+      var outData = ctxProcessed.createImageData(w, h);
+      var src = srcData.data;
+      var out = outData.data;
+
+      var bR = bgColor.r, bG = bgColor.g, bB = bgColor.b;
+
+      if (currentMode === 'luminance') {
+        processLuminance(src, out, w, h, bR, bG, bB, threshold, tolerance);
+      } else {
+        processChannel(src, out, w, h, bR, bG, bB, threshold, tolerance);
+      }
+
+      ctxProcessed.putImageData(outData, 0, 0);
+    }
+
+    // ---- Luminance Mode ----
+    // Uses weighted luminance of the difference from bg color to compute alpha.
+    // threshold: hard cutoff - luminance below this = fully transparent
+    // tolerance: extra range above threshold for soft transition
+    function processLuminance(src, out, w, h, bR, bG, bB, threshold, tolerance) {
+      var effectiveCut = threshold + tolerance;
+      if (effectiveCut > 255) effectiveCut = 255;
+
+      for (var i = 0, len = src.length; i < len; i += 4) {
+        var r = src[i], g = src[i+1], b = src[i+2], a = src[i+3];
+
+        // Difference from background
+        var dr = Math.abs(r - bR);
+        var dg = Math.abs(g - bG);
+        var db = Math.abs(b - bB);
+
+        // Weighted luminance of the difference
+        var lum = 0.299 * dr + 0.587 * dg + 0.114 * db;
+
+        var newAlpha = 0;
+        if (lum > effectiveCut) {
+          // Fully opaque region (ramp from effectiveCut to 255)
+          var range = 255 - effectiveCut;
+          newAlpha = range > 0 ? ((lum - effectiveCut) / range) * 255 : 255;
+        } else if (lum > threshold) {
+          // Soft transition zone (between threshold and effectiveCut)
+          var softRange = effectiveCut - threshold;
+          newAlpha = softRange > 0 ? ((lum - threshold) / softRange) * ((lum - threshold) / softRange) * 64 : 0;
+        }
+
+        // Clamp and apply original alpha
+        newAlpha = Math.min(255, Math.max(0, newAlpha));
+        if (a < 255) newAlpha = newAlpha * a / 255;
+
+        out[i]   = r;
+        out[i+1] = g;
+        out[i+2] = b;
+        out[i+3] = newAlpha;
+      }
+    }
+
+    // ---- Channel Separation Mode ----
+    // Based on Screen blend unmixing. Each RGB channel is processed independently.
+    // For black bg: alpha = max(R, G, B), then un-premultiply to recover true color.
+    // For non-black bg: undo Screen composite to find foreground, then derive alpha.
+    function processChannel(src, out, w, h, bR, bG, bB, threshold, tolerance) {
+      var effectiveCut = threshold + tolerance;
+      if (effectiveCut > 255) effectiveCut = 255;
+
+      // Precompute inverse background (for Screen unmixing)
+      var invBR = 255 - bR;
+      var invBG = 255 - bG;
+      var invBB = 255 - bB;
+
+      for (var i = 0, len = src.length; i < len; i += 4) {
+        var r = src[i], g = src[i+1], b = src[i+2], a = src[i+3];
+
+        // Screen unmix: fg_channel = (result - bg) / (1 - bg/255)
+        // = (result - bg) * 255 / (255 - bg)
+        var fgR, fgG, fgB;
+        var chAlphaR, chAlphaG, chAlphaB;
+
+        if (invBR > 0) {
+          fgR = (r - bR) * 255 / invBR;
+          fgR = Math.max(0, Math.min(255, fgR));
+          chAlphaR = fgR;
+        } else {
+          // bg channel is 255 (white); we can't recover fg from Screen
+          fgR = r;
+          chAlphaR = 255 - r; // invert for white bg channel
+        }
+
+        if (invBG > 0) {
+          fgG = (g - bG) * 255 / invBG;
+          fgG = Math.max(0, Math.min(255, fgG));
+          chAlphaG = fgG;
+        } else {
+          fgG = g;
+          chAlphaG = 255 - g;
+        }
+
+        if (invBB > 0) {
+          fgB = (b - bB) * 255 / invBB;
+          fgB = Math.max(0, Math.min(255, fgB));
+          chAlphaB = fgB;
+        } else {
+          fgB = b;
+          chAlphaB = 255 - b;
+        }
+
+        // Alpha = max of per-channel contributions
+        var chAlpha = Math.max(chAlphaR, chAlphaG, chAlphaB);
+
+        // Apply threshold + tolerance
+        var newAlpha = 0;
+        if (chAlpha > effectiveCut) {
+          var range = 255 - effectiveCut;
+          newAlpha = range > 0 ? ((chAlpha - effectiveCut) / range) * 255 : 255;
+          // Also blend in the raw alpha for better transition
+          newAlpha = Math.max(newAlpha, chAlpha * 0.5);
+          newAlpha = Math.min(255, newAlpha);
+        } else if (chAlpha > threshold) {
+          // Soft zone
+          var softRange = effectiveCut - threshold;
+          var t = softRange > 0 ? (chAlpha - threshold) / softRange : 0;
+          newAlpha = t * t * 48; // gentle ramp
+        }
+
+        newAlpha = Math.min(255, Math.max(0, newAlpha));
+        if (a < 255) newAlpha = newAlpha * a / 255;
+
+        // Un-premultiply: recover the "true" foreground color
+        if (newAlpha > 1) {
+          out[i]   = Math.min(255, Math.round(fgR * 255 / chAlpha));
+          out[i+1] = Math.min(255, Math.round(fgG * 255 / chAlpha));
+          out[i+2] = Math.min(255, Math.round(fgB * 255 / chAlpha));
+        } else {
+          out[i] = 0; out[i+1] = 0; out[i+2] = 0;
+        }
+        out[i+3] = newAlpha;
+      }
+    }
+
+    // ---- Slider events ----
+    thresholdSlider.addEventListener('input', processImage);
+    toleranceSlider.addEventListener('input', processImage);
+
+    // ============================================
+    // Apply to Photoshop
+    // ============================================
+    function getApplyMode() {
+      var radios = document.getElementsByName('applyMode');
+      for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) return radios[i].value;
+      }
+      return 'newLayer';
+    }
+
+    function applyResult() {
+      if (!isImageLoaded) return;
+      var mode = getApplyMode();
+      setStatus('正在套用...');
+
+      var dataUrl = canvasProcessed.toDataURL('image/png');
+
+      fetch(dataUrl).then(function(res) {
+        return res.arrayBuffer();
+      }).then(function(buffer) {
+        var uint8 = new Uint8Array(buffer);
+        var binary = '';
+        for (var i = 0; i < uint8.length; i++) {
+          binary += String.fromCharCode(uint8[i]);
+        }
+
+        var resultPath = tempFilePath.replace('igs_fx_temp.png', 'igs_fx_result.png');
+
+        // Save to filesystem via framework
+        window.parent.postMessage({
+          type: 'save-temp-file',
+          filePath: resultPath,
+          binaryData: binary
+        }, '*');
+
+        // Wait for file write, then call PS
+        setTimeout(function() {
+          var newName = currentLayerName + ' (transparent)';
+
+          if (mode === 'newLayer') {
+            callPsApi('importPNGAsNewLayer', {
+              pngPath: resultPath,
+              layerName: newName
+            }).then(function (result) {
+              parseResult(result);
+              setStatus('"' + newName + '" 已建立');
+            }).catch(function (err) {
+              setStatus('錯誤: ' + err);
+            });
+
+          } else if (mode === 'replace') {
+            callPsApi('replaceLayerWithPNG', {
+              pngPath: resultPath,
+              layerName: currentLayerName
+            }).then(function (result) {
+              parseResult(result);
+              setStatus('已取代 "' + currentLayerName + '"');
+            }).catch(function (err) {
+              setStatus('錯誤: ' + err);
+            });
+
+          } else if (mode === 'mask') {
+            // For mask: we need a grayscale version (alpha channel as luminance)
+            var maskPath = tempFilePath.replace('igs_fx_temp.png', 'igs_fx_mask.png');
+            saveMaskImage(maskPath, function () {
+              callPsApi('applyPNGAsLayerMask', {
+                pngPath: maskPath,
+                layerName: currentLayerName
+              }).then(function (result) {
+                parseResult(result);
+                setStatus('遮罩已套用至 "' + currentLayerName + '"');
+              }).catch(function (err) {
+                setStatus('錯誤: ' + err);
+              });
+            });
+          }
+        }, 500);
+
+      }).catch(function(err) {
+        setStatus('錯誤: ' + err);
+      });
+    }
+
+    // Save alpha channel as grayscale image for mask use
+    function saveMaskImage(maskPath, callback) {
+      var w = canvasProcessed.width;
+      var h = canvasProcessed.height;
+      var processed = ctxProcessed.getImageData(0, 0, w, h);
+
+      // Create a temp canvas for the mask
+      var maskCanvas = document.createElement('canvas');
+      maskCanvas.width = w;
+      maskCanvas.height = h;
+      var maskCtx = maskCanvas.getContext('2d');
+      var maskData = maskCtx.createImageData(w, h);
+
+      // Convert alpha to grayscale (white = opaque, black = transparent)
+      for (var i = 0; i < processed.data.length; i += 4) {
+        var alpha = processed.data[i + 3];
+        maskData.data[i]     = alpha; // R
+        maskData.data[i + 1] = alpha; // G
+        maskData.data[i + 2] = alpha; // B
+        maskData.data[i + 3] = 255;   // fully opaque
+      }
+      maskCtx.putImageData(maskData, 0, 0);
+
+      var maskDataUrl = maskCanvas.toDataURL('image/png');
+      fetch(maskDataUrl).then(function(res) {
+        return res.arrayBuffer();
+      }).then(function(buffer) {
+        var uint8 = new Uint8Array(buffer);
+        var binary = '';
+        for (var j = 0; j < uint8.length; j++) {
+          binary += String.fromCharCode(uint8[j]);
+        }
+        window.parent.postMessage({
+          type: 'save-temp-file',
+          filePath: maskPath,
+          binaryData: binary
+        }, '*');
+        setTimeout(callback, 300);
+      });
+    }
+
+    // ============================================
+    // Download
+    // ============================================
+    function downloadPNG() {
+      var link = document.createElement('a');
+      link.download = currentLayerName + '_transparent.png';
+      link.href = canvasProcessed.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+    "name": "特效去背",
+    "icon": "icon.png",
+    "entry": "index.html",
+    "version": "1.0.0",
+    "description": "將黑底特效圖片轉為透明 PNG，保留光效細節，可調整去背程度",
+    "category": ["image", "export"],
+    "minPsVersion": "20.0"
+}

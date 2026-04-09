@@ -1,0 +1,75 @@
+# IGS ACD Art Tools - Auto Release Workflow
+#
+# 使用方式：
+# 1. 在本機打一個 version tag:  git tag v1.0.1
+# 2. Push tag 到 GitHub:         git push origin v1.0.1
+# 3. GitHub Actions 會自動打包 extension/ 資料夾為 zip 並發佈到 Releases
+#
+# Release 命名規則：tag name 即為版本號，例如 v1.0.0
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Extract version from tag
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      # 3. Update version in manifest.xml
+      - name: Update manifest version
+        run: |
+          sed -i "s/ExtensionBundleVersion=\"[^\"]*\"/ExtensionBundleVersion=\"${{ steps.version.outputs.VERSION }}\"/" extension/CSXS/manifest.xml
+          sed -i "s/Version=\"[^\"]*\"/Version=\"${{ steps.version.outputs.VERSION }}\"/" extension/CSXS/manifest.xml
+          echo "Updated manifest.xml to version ${{ steps.version.outputs.VERSION }}"
+          cat extension/CSXS/manifest.xml | head -5
+
+      # 4. Package extension into zip
+      - name: Create release zip
+        run: |
+          cd extension
+          zip -r ../igs-arttools-v${{ steps.version.outputs.VERSION }}.zip . \
+            -x "*.DS_Store" \
+            -x "__MACOSX/*"
+          cd ..
+          echo "Package size:"
+          ls -lh igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
+
+      # 5. Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}
+
+            ### 更新方式
+            - **自動更新：** 開啟 Photoshop 插件面板，如有偵測到新版本會自動提示更新
+            - **手動更新：** 點擊面板右上角 ↻ 按鈕檢查更新
+
+            ### 首次安裝
+            請下載 `igs-arttools-setup.exe` 安裝包進行安裝。
+
+            ---
+            *此 Release 由 GitHub Actions 自動產生*
+          files: |
+            igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
