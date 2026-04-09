@@ -96,6 +96,11 @@ jobs:
           cat RELEASE_NOTES.md >> /tmp/release_body.md 2>/dev/null || true
           echo -e "\n---\n*此 Release 由 GitHub Actions 自動產生*" >> /tmp/release_body.md
 
+      # 7. Copy docs for release attachment
+      - name: Prepare docs
+        run: |
+          cp "docs/安裝說明書.md" ./安裝說明書.md 2>/dev/null || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -104,6 +109,7 @@ jobs:
           files: |
             igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
             igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
+            安裝說明書.md
           draft: false
           prerelease: false
         env:
