@@ -77,7 +77,7 @@
 
             setInterval(function () {
                 App.updater.checkForUpdates(false);
-            }, 60 * 60 * 1000);
+            }, 10 * 1000);
         }
 
         // If no repo configured, show settings on first launch
