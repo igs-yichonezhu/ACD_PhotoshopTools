@@ -50,6 +50,16 @@ jobs:
           echo "Package size:"
           ls -lh igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
 
+      # 4b. Package Cocos extension
+      - name: Create Cocos extension zip
+        run: |
+          cd cocos-extension
+          zip -r ../igs-ui-importer-v${{ steps.version.outputs.VERSION }}.zip igs-ui-importer/ \
+            -x "*.DS_Store"
+          cd ..
+          echo "Cocos extension size:"
+          ls -lh igs-ui-importer-v${{ steps.version.outputs.VERSION }}.zip
+
       # 5. Build .exe installer with NSIS
       - name: Install NSIS
         run: |
@@ -109,6 +119,7 @@ jobs:
           files: |
             igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
             igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
+            igs-ui-importer-v${{ steps.version.outputs.VERSION }}.zip
             安裝說明書.md
           draft: false
           prerelease: false

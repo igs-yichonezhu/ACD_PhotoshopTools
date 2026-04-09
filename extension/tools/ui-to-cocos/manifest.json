@@ -1,5 +1,5 @@
 {
-    "name": "UI 匯出到 Cocos",
+    "name": "Cocos UI Importer",
     "version": "1.0.0",
     "description": "將 PSD 圖層結構匯出為 Cocos Creator 可用的 layout.json + PNG，支援圖片、文字、群組層級",
     "entry": "index.html",
