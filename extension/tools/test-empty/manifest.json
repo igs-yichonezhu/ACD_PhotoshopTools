@@ -1,7 +1,0 @@
-{
-    "name": "測試工具",
-    "entry": "index.html",
-    "version": "1.0.0",
-    "description": "測試自動更新用，確認後移除",
-    "category": ["other"]
-}
