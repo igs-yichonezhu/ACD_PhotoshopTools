@@ -315,8 +315,7 @@ body {
    ============================================ */
 .update-banner {
     display: none;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     padding: var(--spacing-sm) var(--spacing-md);
     background: #1a3a5c;
     border-bottom: 1px solid var(--accent);
@@ -327,9 +326,53 @@ body {
     display: flex;
 }
 
+.update-banner-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
 .update-banner-text {
     font-size: 11px;
     color: var(--text-primary);
+}
+
+.update-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.release-notes-toggle {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.release-notes-toggle:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+.release-notes {
+    display: none;
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.release-notes.visible {
+    display: block;
 }
 
 .update-btn {
@@ -345,6 +388,22 @@ body {
 
 .update-btn:hover {
     background: var(--accent-hover);
+}
+
+/* Connection Status */
+.connection-status {
+    font-size: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.connection-status.connected {
+    color: var(--success);
+}
+
+.connection-status.disconnected {
+    color: var(--warning);
 }
 
 /* ============================================

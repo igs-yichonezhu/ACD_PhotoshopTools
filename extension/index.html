@@ -12,8 +12,14 @@
     <div id="homeView" class="home-view">
         <!-- Update Banner -->
         <div id="updateBanner" class="update-banner">
-            <span class="update-banner-text" id="updateText">新版本可用 v0.0.0</span>
-            <button class="update-btn" id="updateBtn" onclick="App.updater.performUpdate()">更新</button>
+            <div class="update-banner-row">
+                <span class="update-banner-text" id="updateText">新版本可用 v0.0.0</span>
+                <div class="update-banner-actions">
+                    <button class="release-notes-toggle" id="releaseNotesToggle" style="display:none;" onclick="App.updater.toggleReleaseNotes()">查看更新內容 ▼</button>
+                    <button class="update-btn" id="updateBtn" onclick="App.updater.performUpdate()">更新</button>
+                </div>
+            </div>
+            <div class="release-notes" id="releaseNotes"></div>
         </div>
 
         <!-- Header -->
@@ -68,6 +74,10 @@
     <div id="settingsModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-title">設定</div>
+            <div class="modal-field">
+                <label>連線狀態</label>
+                <div class="connection-status" id="connectionStatus">⚠️ 未設定</div>
+            </div>
             <div class="modal-field">
                 <label>GitHub Personal Access Token</label>
                 <input type="password" id="inputToken" placeholder="ghp_xxxxxxxxxxxx">

@@ -23,6 +23,7 @@
     var updaterState = {
         latestVersion: null,
         downloadUrl: null,
+        releaseNotes: null,
         isChecking: false,
         isUpdating: false
     };
@@ -240,9 +241,10 @@
                 }
 
                 updaterState.latestVersion = latestVersion;
+                updaterState.releaseNotes = release.body || '';
 
                 // Show update banner
-                showUpdateBanner(latestVersion);
+                showUpdateBanner(latestVersion, release.body);
                 App.setStatus('新版本可用：v' + latestVersion);
             } else {
                 App.setStatus('已是最新版本 v' + currentVersion);
@@ -253,11 +255,37 @@
         });
     }
 
-    function showUpdateBanner(version) {
+    function showUpdateBanner(version, releaseNotes) {
         var banner = document.getElementById('updateBanner');
         var text = document.getElementById('updateText');
+        var notesEl = document.getElementById('releaseNotes');
+        var toggleBtn = document.getElementById('releaseNotesToggle');
+
         text.textContent = '新版本可用 v' + version;
         banner.classList.add('visible');
+
+        if (releaseNotes && notesEl) {
+            // Simple markdown-like formatting: keep line breaks, strip ## headers to bold
+            var formatted = releaseNotes
+                .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+                .replace(/^## (.+)$/gm, '<strong>$1</strong>')
+                .replace(/^- /gm, '• ')
+                .replace(/\n/g, '<br>');
+            notesEl.innerHTML = formatted;
+            toggleBtn.style.display = 'inline';
+        }
+    }
+
+    function toggleReleaseNotes() {
+        var notesEl = document.getElementById('releaseNotes');
+        var toggleBtn = document.getElementById('releaseNotesToggle');
+        if (notesEl.classList.contains('visible')) {
+            notesEl.classList.remove('visible');
+            toggleBtn.textContent = '查看更新內容 ▼';
+        } else {
+            notesEl.classList.add('visible');
+            toggleBtn.textContent = '收起 ▲';
+        }
     }
 
     function hideUpdateBanner() {
@@ -469,6 +497,7 @@
             window.App.updater = {
                 checkForUpdates: checkForUpdates,
                 performUpdate: performUpdate,
+                toggleReleaseNotes: toggleReleaseNotes,
                 getState: function () { return updaterState; }
             };
         }

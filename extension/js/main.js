@@ -21,6 +21,7 @@
         workflow: '工作流程',
         layer: '圖層工具',
         ui: 'UI 工具',
+        resource: '共用資源',
         other: '其他'
     };
 
@@ -642,6 +643,17 @@
         document.getElementById('inputToken').value = state.config.token || '';
         document.getElementById('inputRepo').value = state.config.repo || '';
         document.getElementById('inputWebhook').value = state.config.webhookUrl || '';
+
+        // Update connection status
+        var statusEl = document.getElementById('connectionStatus');
+        if (state.config.token && state.config.repo) {
+            statusEl.textContent = '✅ 已連線（' + state.config.repo + '）';
+            statusEl.className = 'connection-status connected';
+        } else {
+            statusEl.textContent = '⚠️ 未設定 — 請填入 Token 和 Repository';
+            statusEl.className = 'connection-status disconnected';
+        }
+
         document.getElementById('settingsModal').classList.add('visible');
     }
 

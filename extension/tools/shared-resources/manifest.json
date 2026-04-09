@@ -1,0 +1,8 @@
+{
+    "name": "共用資源",
+    "icon": "icon.png",
+    "entry": "index.html",
+    "version": "1.0.0",
+    "description": "公司內部常用連結與共用資源",
+    "category": ["resource"]
+}

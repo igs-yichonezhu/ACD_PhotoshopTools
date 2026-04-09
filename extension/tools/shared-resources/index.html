@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>共用資源</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: #1e1e1e;
+            color: #e8e8e8;
+            padding: 16px;
+        }
+
+        .title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #a0a0a0;
+        }
+
+        .subtitle {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .resource-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .resource-card {
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-radius: 6px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .resource-card:hover {
+            background: #383838;
+            border-color: #3794ff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .resource-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e8e8e8;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .resource-card-title .icon {
+            font-size: 14px;
+        }
+
+        .resource-card-desc {
+            font-size: 11px;
+            color: #a0a0a0;
+            line-height: 1.4;
+        }
+
+        .resource-card-link {
+            font-size: 9px;
+            color: #666;
+            margin-top: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .empty {
+            text-align: center;
+            color: #666;
+            padding: 40px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">共用資源</div>
+    <div class="subtitle">點擊卡片在瀏覽器中開啟連結。如需新增資源，請聯繫管理員。</div>
+    <div class="resource-list" id="resourceList">
+        <div class="empty">載入中...</div>
+    </div>
+
+    <script>
+        (function () {
+            var fs = require('fs');
+            var path = require('path');
+            var exec = require('child_process').exec;
+
+            // Icon mapping based on URL patterns
+            function getIcon(url) {
+                if (url.indexOf('spreadsheets') !== -1) return '📊';
+                if (url.indexOf('presentation') !== -1) return '📑';
+                if (url.indexOf('document') !== -1) return '📄';
+                if (url.indexOf('drive') !== -1) return '📁';
+                return '🔗';
+            }
+
+            // Parse resources.md
+            function parseResources(mdContent) {
+                var resources = [];
+                var lines = mdContent.split('\n');
+                var current = null;
+
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (!line) continue;
+
+                    if (line.indexOf('## ') === 0) {
+                        if (current) resources.push(current);
+                        current = { title: line.replace('## ', ''), url: '', description: '' };
+                    } else if (current && !current.url && (line.indexOf('http://') === 0 || line.indexOf('https://') === 0)) {
+                        current.url = line;
+                    } else if (current && current.url) {
+                        current.description = current.description ? current.description + ' ' + line : line;
+                    }
+                }
+                if (current) resources.push(current);
+                return resources;
+            }
+
+            // Open URL in system browser
+            function openUrl(url) {
+                exec('start "" "' + url.replace(/"/g, '\\"') + '"');
+            }
+
+            // Render cards
+            function render() {
+                var listEl = document.getElementById('resourceList');
+
+                try {
+                    var mdPath = path.join(__dirname, 'resources.md');
+                    var mdContent = fs.readFileSync(mdPath, 'utf8');
+                    var resources = parseResources(mdContent);
+
+                    if (resources.length === 0) {
+                        listEl.innerHTML = '<div class="empty">沒有找到資源連結</div>';
+                        return;
+                    }
+
+                    listEl.innerHTML = '';
+
+                    resources.forEach(function (res) {
+                        var card = document.createElement('div');
+                        card.className = 'resource-card';
+                        card.onclick = function () { openUrl(res.url); };
+
+                        var icon = getIcon(res.url);
+
+                        card.innerHTML =
+                            '<div class="resource-card-title"><span class="icon">' + icon + '</span>' + escapeHtml(res.title) + '</div>' +
+                            (res.description ? '<div class="resource-card-desc">' + escapeHtml(res.description) + '</div>' : '') +
+                            '<div class="resource-card-link">' + escapeHtml(res.url) + '</div>';
+
+                        listEl.appendChild(card);
+                    });
+
+                } catch (e) {
+                    listEl.innerHTML = '<div class="empty">無法載入資源清單：' + e.message + '</div>';
+                }
+            }
+
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            render();
+        })();
+    </script>
+</body>
+</html>
