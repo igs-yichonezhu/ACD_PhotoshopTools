@@ -383,25 +383,12 @@
     <a id="cocosLink" style="color:#5ad8b6;font-size:11px;cursor:pointer;text-decoration:none;">Cocos Importer ↗ 開啟資料夾</a>
     <script>
     document.getElementById('cocosLink').onclick = function() {
-        var p = require('path'), fs = require('fs');
+        var p = require('path');
         var loc = decodeURIComponent(window.location.pathname);
         if (loc.match(/^\/[A-Za-z]:\//)) loc = loc.substring(1);
-        var toolDir = p.dirname(loc);
-        var extDir = p.dirname(p.dirname(toolDir));
-
-        // Try installed path first, then dev project path
-        var paths = [
-            p.join(extDir, 'cocos-importer'),
-            p.join(p.dirname(extDir), 'cocos-extension', 'igs-ui-importer'),
-            p.join(p.dirname(extDir), 'cocos-extension')
-        ];
-
-        var target = extDir;
-        for (var i = 0; i < paths.length; i++) {
-            if (fs.existsSync(paths[i])) { target = paths[i]; break; }
-        }
-
-        require('child_process').exec('explorer "' + target + '"');
+        var extDir = p.dirname(p.dirname(p.dirname(loc)));
+        var target = p.join(extDir, 'cocos-importer');
+        require('child_process').exec('explorer "' + target.replace(/\//g, '\\') + '"');
     };
     </script>
   </div>
