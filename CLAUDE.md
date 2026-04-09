@@ -51,6 +51,7 @@ cocos-extension/        ← Cocos Creator igs-ui-importer
 - 缺少 icon：shared-resources/icon.png、ui-to-cocos/icon.png（48x48 PNG RGBA）
 
 ## 注意事項
+- manifest.xml 改面板尺寸時，Size 和 MinSize 要一起改
 - CSInterface.js 勿改（Adobe SDK）
 - config.json 含 PAT，絕不 commit
 - host.jsx 文字讀取用 DOM + Action Manager 雙路徑，改前先讀 PRD 報告
