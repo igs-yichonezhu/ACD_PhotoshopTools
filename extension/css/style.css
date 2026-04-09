@@ -97,7 +97,7 @@ body {
 .header-title {
     font-size: 14px;
     font-weight: 700;
-    color: #ff6b35;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);

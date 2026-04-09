@@ -41,11 +41,11 @@
                     <Menu>IGS ACD Art Tools</Menu>
                     <Geometry>
                         <Size>
-                            <Width>430</Width>
+                            <Width>460</Width>
                             <Height>750</Height>
                         </Size>
                         <MinSize>
-                            <Width>320</Width>
+                            <Width>360</Width>
                             <Height>500</Height>
                         </MinSize>
                     </Geometry>
