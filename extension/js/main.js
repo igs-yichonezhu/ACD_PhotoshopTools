@@ -69,11 +69,15 @@
         // Setup postMessage listener for iframe communication
         window.addEventListener('message', handlePostMessage);
 
-        // Check for updates (silent) - token optional for public repos
+        // Check for updates (silent) - on startup + every hour
         if (state.config.repo) {
             setTimeout(function () {
                 App.updater.checkForUpdates(false);
             }, 2000);
+
+            setInterval(function () {
+                App.updater.checkForUpdates(false);
+            }, 60 * 60 * 1000);
         }
 
         // If no repo configured, show settings on first launch
