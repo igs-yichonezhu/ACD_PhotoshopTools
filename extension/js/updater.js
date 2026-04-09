@@ -208,9 +208,9 @@
         if (updaterState.isChecking) return;
 
         var config = App.getConfig();
-        if (!config.token || !config.repo) {
+        if (!config.repo) {
             if (showNotification) {
-                App.setStatus('請先在設定中填入 GitHub Token 和 Repository');
+                App.setStatus('請先在設定中填入 GitHub Repository');
             }
             return;
         }
