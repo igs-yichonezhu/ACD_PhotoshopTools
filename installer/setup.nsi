@@ -97,6 +97,11 @@ FunctionEnd
 Function TokenPageLeave
     ${NSD_GetText} $TokenInput $GitHubToken
     ${NSD_GetText} $RepoInput $GitHubRepo
+
+    ; Default repo if user left it empty
+    ${If} $GitHubRepo == ""
+        StrCpy $GitHubRepo "igs-yichonezhu/ACD_PhotoshopTools"
+    ${EndIf}
 FunctionEnd
 
 ; ============================================
