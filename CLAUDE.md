@@ -44,6 +44,18 @@ cocos-extension/        ← Cocos Creator igs-ui-importer
 - **新增工具**：`tools/` 下建資料夾 + manifest.json + index.html
 - **發版**：commit → push → `git tag vX.X.X && git push origin vX.X.X`
 - **Cocos 工作流**：ui-to-cocos 匯出 layout.json → Cocos igs-ui-importer 生成 Prefab
+- **切開發模式**：建 symlink 直連，改完即時重啟 PS 看效果
+- **切回安裝模式**：移除 symlink，改用 .exe 安裝的版本
+
+## 開發模式切換指令
+```cmd
+# 切開發模式（即時預覽）
+mklink /D "%APPDATA%\Adobe\CEP\extensions\com.igs.arttools" "C:\Users\yichonezhu\Documents\Claude\Projects\Photoshop Plugin\extension"
+
+# 切回安裝模式（跟同事一致）
+rmdir "%APPDATA%\Adobe\CEP\extensions\com.igs.arttools"
+# 然後重新執行 .exe 安裝
+```
 
 ## 待辦 / 未決議題
 - Repo 權限：目前 Public，之後可能改 Private（需決定 PAT 發放方式）
