@@ -126,7 +126,8 @@ Section "Install"
     FileOpen $0 "$APPDATA\IGS-ArtTools\config.json" w
     FileWrite $0 '{$\r$\n'
     FileWrite $0 '  "token": "$GitHubToken",$\r$\n'
-    FileWrite $0 '  "repo": "$GitHubRepo"$\r$\n'
+    FileWrite $0 '  "repo": "$GitHubRepo",$\r$\n'
+    FileWrite $0 '  "webhookUrl": "https://script.google.com/macros/s/AKfycbyNzhKUZkubhdP48XpmVVx55YmSszPJCmB_gKum0CHsxfmmWU4ppAzSdyot6g-SAEEFOw/exec"$\r$\n'
     FileWrite $0 '}$\r$\n'
     FileClose $0
 

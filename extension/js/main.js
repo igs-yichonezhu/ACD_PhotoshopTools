@@ -87,6 +87,8 @@
     // Config Management
     // ============================================
 
+    var DEFAULT_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyNzhKUZkubhdP48XpmVVx55YmSszPJCmB_gKum0CHsxfmmWU4ppAzSdyot6g-SAEEFOw/exec';
+
     function loadConfig() {
         try {
             if (fs.existsSync(state.configPath)) {
@@ -95,9 +97,13 @@
             } else {
                 state.config = { token: '', repo: '' };
             }
+            // Ensure webhook URL has default
+            if (!state.config.webhookUrl) {
+                state.config.webhookUrl = DEFAULT_WEBHOOK;
+            }
         } catch (e) {
             console.error('Failed to load config:', e);
-            state.config = { token: '', repo: '' };
+            state.config = { token: '', repo: '', webhookUrl: DEFAULT_WEBHOOK };
         }
     }
 
@@ -330,11 +336,81 @@
     }
 
     // ============================================
+    // Usage Logger (A: local file + B: Google Sheets)
+    // ============================================
+
+    function logToolUsage(toolId, toolName, action) {
+        var timestamp = new Date().toISOString();
+        var computerName = os.hostname();
+        var userName = process.env.USERNAME || process.env.USER || 'unknown';
+
+        var logEntry = {
+            timestamp: timestamp,
+            user: userName,
+            computer: computerName,
+            toolId: toolId,
+            toolName: toolName,
+            action: action  // 'open' or 'close'
+        };
+
+        // --- A: Local log file ---
+        try {
+            var logDir = path.join(
+                process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+                'IGS-ArtTools'
+            );
+            var logPath = path.join(logDir, 'usage.log');
+
+            if (!fs.existsSync(logDir)) {
+                fs.mkdirSync(logDir, { recursive: true });
+            }
+
+            var logLine = timestamp + ' | ' + userName + ' | ' + computerName + ' | ' + action + ' | ' + toolId + ' (' + toolName + ')\n';
+            fs.appendFileSync(logPath, logLine, 'utf8');
+        } catch (e) {
+            console.warn('Failed to write local log:', e);
+        }
+
+        // --- B: Google Sheets webhook ---
+        try {
+            var webhookUrl = state.config.webhookUrl;
+            if (!webhookUrl) return;
+
+            var postData = JSON.stringify(logEntry);
+            var urlParts = require('url').parse(webhookUrl);
+
+            var options = {
+                hostname: urlParts.hostname,
+                path: urlParts.path,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            };
+
+            var protocol = urlParts.protocol === 'https:' ? https : require('http');
+            var req = protocol.request(options, function () { /* ignore response */ });
+            req.on('error', function (e) {
+                console.warn('Failed to send usage log to webhook:', e.message);
+            });
+            req.setTimeout(5000, function () { req.abort(); });
+            req.write(postData);
+            req.end();
+        } catch (e) {
+            console.warn('Failed to send usage log:', e);
+        }
+    }
+
+    // ============================================
     // Tool Navigation
     // ============================================
 
     function openTool(tool) {
         state.currentTool = tool;
+
+        // Log tool open
+        logToolUsage(tool.id, tool.name, 'open');
 
         var homeView = document.getElementById('homeView');
         var toolView = document.getElementById('toolView');
@@ -351,6 +427,11 @@
     }
 
     function goHome() {
+        // Log tool close
+        if (state.currentTool) {
+            logToolUsage(state.currentTool.id, state.currentTool.name, 'close');
+        }
+
         var homeView = document.getElementById('homeView');
         var toolView = document.getElementById('toolView');
         var iframe = document.getElementById('toolIframe');
@@ -560,6 +641,7 @@
     function showSettings() {
         document.getElementById('inputToken').value = state.config.token || '';
         document.getElementById('inputRepo').value = state.config.repo || '';
+        document.getElementById('inputWebhook').value = state.config.webhookUrl || '';
         document.getElementById('settingsModal').classList.add('visible');
     }
 
@@ -570,8 +652,9 @@
     function saveSettings() {
         var token = document.getElementById('inputToken').value.trim();
         var repo = document.getElementById('inputRepo').value.trim();
+        var webhookUrl = document.getElementById('inputWebhook').value.trim();
 
-        if (saveConfig({ token: token, repo: repo })) {
+        if (saveConfig({ token: token, repo: repo, webhookUrl: webhookUrl })) {
             hideSettings();
             setStatus('設定已儲存');
         } else {
