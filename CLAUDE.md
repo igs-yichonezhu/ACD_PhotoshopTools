@@ -1,61 +1,52 @@
 # IGS ACD Art Tools — Project Context
 
 ## 專案簡介
-Photoshop CEP 插件框架，公司內部美術工具箱。
+Photoshop CEP 插件框架 + Cocos Creator UI 匯入工具鏈。公司內部美術工具箱。
 
 ## 架構速查
 
 ```
 extension/              ← CEP 插件本體
-├── CSXS/manifest.xml   ← 版本號在這（ExtensionBundleVersion）
-├── js/
-│   ├── main.js         ← 框架核心（工具載入、UI、postMessage 路由、usage log）
-│   ├── ps-bridge.js    ← Photoshop API 封裝
-│   ├── updater.js      ← GitHub 自動更新模組
-│   └── CSInterface.js  ← Adobe CEP SDK
-├── jsx/host.jsx        ← ExtendScript（PS DOM 操作）
-├── tools/              ← 所有工具放這裡（每個工具一個資料夾 + manifest.json）
-│   ├── color-picker/
-│   ├── doc-info/
-│   ├── fx-remove-bg/
-│   └── ui-to-cocos/
+├── CSXS/manifest.xml   ← 版本號（ExtensionBundleVersion）
+├── js/main.js          ← 框架核心（工具載入、UI、postMessage、usage log）
+├── js/ps-bridge.js     ← Photoshop API 封裝
+├── js/updater.js       ← GitHub 自動更新
+├── js/CSInterface.js   ← Adobe CEP SDK（勿改）
+├── jsx/host.jsx        ← ExtendScript（PS DOM + Action Manager）
+├── tools/              ← 工具目錄（自動掃描 manifest.json）
 └── index.html          ← 主面板 UI
-installer/setup.nsi     ← NSIS 安裝腳本（產生 .exe）
-.github/workflows/release.yml ← CI/CD（打 tag 自動發 Release + .exe + .zip）
-cocos-extension/        ← Cocos Creator UI 匯入延伸模組
+installer/setup.nsi     ← NSIS 安裝腳本
+.github/workflows/release.yml ← CI/CD
+cocos-extension/        ← Cocos Creator igs-ui-importer
 ```
 
 ## 關鍵機制
-
-- **安裝**：使用者安裝 .exe → 檔案複製到 `%APPDATA%\Adobe\CEP\extensions\com.igs.arttools\`
-- **更新**：updater.js 用 GitHub PAT 呼叫 `/releases/latest` → 比對版本 → 下載 zip 覆蓋
-- **發版**：`git tag vX.X.X && git push origin vX.X.X` → GitHub Actions 自動建置
-- **Usage Log**：開關工具時寫入本地 `usage.log` + POST 到 Google Sheets webhook
-- **Config 位置**：`%APPDATA%\IGS-ArtTools\config.json`（token, repo, webhookUrl）
+- **安裝**：.exe → `%APPDATA%\Adobe\CEP\extensions\com.igs.arttools\`
+- **更新**：updater.js → GitHub `/releases/latest` → 下載 zip 覆蓋
+- **發版**：`git tag vX.X.X && git push origin vX.X.X` → Actions 產生 .exe + .zip
+- **Usage Log**：本地 `usage.log` + Google Sheets webhook
+- **Config**：`%APPDATA%\IGS-ArtTools\config.json`（token, repo, webhookUrl）
 
 ## GitHub
-
 - Repo: `igs-yichonezhu/ACD_PhotoshopTools`（Private）
 - 分支: `main`
 
-## 新增工具 SOP
+## 深入文件（需要時再讀）
+| 主題 | 檔案路徑 |
+|------|---------|
+| 完整開發歷程 + Cocos 技術細節 | `docs/開發歷程PRD結案報告.md` |
+| 使用者操作手冊 | `docs/操作手冊.md` |
+| 安裝說明書 | `docs/安裝說明書.md` |
+| GitHub + CI/CD 設定指南 | `GITHUB-SETUP.md` |
+| 工具開發範本 | `extension/tools/README-TOOL-TEMPLATE.md` |
 
-1. 在 `extension/tools/` 下建資料夾
-2. 建 `manifest.json`（name, entry, version, category 必填）
-3. 建 `index.html`（用 postMessage 呼叫 ps-api）
-4. 框架會自動掃描載入
-
-## 發版 SOP
-
-1. 確認變更已 commit + push
-2. `git tag v版本號 && git push origin v版本號`
-3. GitHub Actions 自動產生 .exe + .zip Release
-4. 已安裝的使用者插件會自動偵測到新版
+## 快速 SOP
+- **新增工具**：`tools/` 下建資料夾 + manifest.json + index.html
+- **發版**：commit → push → `git tag vX.X.X && git push origin vX.X.X`
+- **Cocos 工作流**：ui-to-cocos 匯出 layout.json → Cocos igs-ui-importer 生成 Prefab
 
 ## 注意事項
-
-- CSInterface.js 是 Adobe SDK，不要修改
-- config.json 含 GitHub PAT，絕不 commit（已在 .gitignore）
-- Google Sheets webhook URL 已硬編碼為預設值在 main.js DEFAULT_WEBHOOK
-- NSIS 安裝腳本在 Linux CI 上用 apt 安裝 nsis 建置
-- 工具的語言統一用繁體中文
+- CSInterface.js 勿改（Adobe SDK）
+- config.json 含 PAT，絕不 commit
+- host.jsx 文字讀取用 DOM + Action Manager 雙路徑，改前先讀 PRD 報告
+- 語言統一繁體中文
