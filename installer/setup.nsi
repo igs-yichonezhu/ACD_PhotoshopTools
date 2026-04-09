@@ -118,6 +118,8 @@ Section "Install"
     WriteRegStr HKCU "Software\Adobe\CSXS.11" "PlayerDebugMode" "1"
     WriteRegStr HKCU "Software\Adobe\CSXS.12" "PlayerDebugMode" "1"
     WriteRegStr HKCU "Software\Adobe\CSXS.13" "PlayerDebugMode" "1"
+    WriteRegStr HKCU "Software\Adobe\CSXS.14" "PlayerDebugMode" "1"
+    WriteRegStr HKCU "Software\Adobe\CSXS.15" "PlayerDebugMode" "1"
 
     ; ---- Save GitHub config ----
     CreateDirectory "$APPDATA\IGS-ArtTools"
