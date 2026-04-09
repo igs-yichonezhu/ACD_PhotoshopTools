@@ -114,6 +114,11 @@ Section "Install"
     ; Copy all extension files
     File /r "..\extension\*.*"
 
+    ; Copy Cocos UI Importer extension
+    SetOutPath "$INSTDIR\cocos-importer"
+    File /r "..\cocos-extension\igs-ui-importer\*.*"
+    SetOutPath "$INSTDIR"
+
     ; ---- Set CEP Debug Mode for all CSXS versions ----
     ; CSXS 7 (CC 2017), 8 (CC 2018), 9 (CC 2019-2020), 10 (2021), 11 (2022+), 12 (2024), 13 (2026)
     WriteRegStr HKCU "Software\Adobe\CSXS.7" "PlayerDebugMode" "1"
