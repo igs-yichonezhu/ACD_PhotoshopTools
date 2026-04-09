@@ -69,15 +69,15 @@
         // Setup postMessage listener for iframe communication
         window.addEventListener('message', handlePostMessage);
 
-        // Check for updates (silent)
-        if (state.config.token && state.config.repo) {
+        // Check for updates (silent) - token optional for public repos
+        if (state.config.repo) {
             setTimeout(function () {
                 App.updater.checkForUpdates(false);
             }, 2000);
         }
 
-        // If no token configured, show settings on first launch
-        if (!state.config.token) {
+        // If no repo configured, show settings on first launch
+        if (!state.config.repo) {
             App.showSettings();
         }
 
@@ -661,11 +661,12 @@
 
         // Update connection status
         var statusEl = document.getElementById('connectionStatus');
-        if (state.config.token && state.config.repo) {
-            statusEl.textContent = '✅ 已連線（' + state.config.repo + '）';
+        if (state.config.repo) {
+            var mode = state.config.token ? '私有模式' : '公開模式';
+            statusEl.textContent = '✅ 已連線（' + mode + '）';
             statusEl.className = 'connection-status connected';
         } else {
-            statusEl.textContent = '⚠️ 未設定 — 請填入 Token 和 Repository';
+            statusEl.textContent = '⚠️ 未設定 — 請至少填入 Repository';
             statusEl.className = 'connection-status disconnected';
         }
 

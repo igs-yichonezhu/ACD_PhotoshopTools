@@ -80,7 +80,7 @@ Function TokenPage
     ${NSD_CreateLabel} 0 56u 100% 12u "GitHub Repository (owner/repo):"
     Pop $0
 
-    ${NSD_CreateText} 0 72u 100% 14u ""
+    ${NSD_CreateText} 0 72u 100% 14u "igs-yichonezhu/ACD_PhotoshopTools"
     Pop $RepoInput
 
     ; Hint

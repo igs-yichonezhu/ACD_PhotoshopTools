@@ -77,20 +77,26 @@
     function githubRequest(endpoint, callback) {
         var config = App.getConfig();
 
-        if (!config.token || !config.repo) {
-            callback('GitHub token or repo not configured', null);
+        if (!config.repo) {
+            callback('GitHub repo not configured', null);
             return;
+        }
+
+        var headers = {
+            'User-Agent': 'IGS-ArtTools-Updater',
+            'Accept': 'application/vnd.github.v3+json'
+        };
+
+        // Token is optional for public repos
+        if (config.token) {
+            headers['Authorization'] = 'token ' + config.token;
         }
 
         var options = {
             hostname: GITHUB_API,
             path: '/repos/' + config.repo + endpoint,
             method: 'GET',
-            headers: {
-                'User-Agent': 'IGS-ArtTools-Updater',
-                'Authorization': 'token ' + config.token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
+            headers: headers
         };
 
         var req = https.request(options, function (res) {
@@ -138,15 +144,20 @@
         // Parse the URL
         var urlParts = require('url').parse(url);
 
+        var headers = {
+            'User-Agent': 'IGS-ArtTools-Updater',
+            'Accept': 'application/octet-stream'
+        };
+
+        if (config.token) {
+            headers['Authorization'] = 'token ' + config.token;
+        }
+
         var options = {
             hostname: urlParts.hostname,
             path: urlParts.path,
             method: 'GET',
-            headers: {
-                'User-Agent': 'IGS-ArtTools-Updater',
-                'Authorization': 'token ' + config.token,
-                'Accept': 'application/octet-stream'
-            }
+            headers: headers
         };
 
         var protocol = urlParts.protocol === 'https:' ? https : require('http');
