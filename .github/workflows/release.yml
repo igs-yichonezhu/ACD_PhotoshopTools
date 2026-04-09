@@ -39,7 +39,7 @@ jobs:
           echo "Updated manifest.xml to version ${{ steps.version.outputs.VERSION }}"
           cat extension/CSXS/manifest.xml | head -5
 
-      # 4. Package extension into zip
+      # 4. Package extension into zip (for auto-update)
       - name: Create release zip
         run: |
           cd extension
@@ -50,7 +50,26 @@ jobs:
           echo "Package size:"
           ls -lh igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
 
-      # 5. Create GitHub Release
+      # 5. Build .exe installer with NSIS
+      - name: Install NSIS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nsis
+
+      - name: Update installer version
+        run: |
+          sed -i 's/DisplayVersion" ".*"/DisplayVersion" "${{ steps.version.outputs.VERSION }}"/' installer/setup.nsi
+
+      - name: Build installer exe
+        run: |
+          cd installer
+          makensis setup.nsi
+          cd ..
+          mv installer/igs-arttools-setup.exe ./igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
+          echo "Installer size:"
+          ls -lh igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
+
+      # 6. Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -58,17 +77,18 @@ jobs:
           body: |
             ## IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}
 
-            ### 更新方式
+            ### 首次安裝
+            下載 `igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe` 雙擊安裝即可。
+
+            ### 已安裝的用戶
             - **自動更新：** 開啟 Photoshop 插件面板，如有偵測到新版本會自動提示更新
             - **手動更新：** 點擊面板右上角 ↻ 按鈕檢查更新
-
-            ### 首次安裝
-            請下載 `igs-arttools-setup.exe` 安裝包進行安裝。
 
             ---
             *此 Release 由 GitHub Actions 自動產生*
           files: |
             igs-arttools-v${{ steps.version.outputs.VERSION }}.zip
+            igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
           draft: false
           prerelease: false
         env:
