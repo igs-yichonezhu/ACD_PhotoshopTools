@@ -226,7 +226,8 @@
 
             if (err) {
                 App.setStatus('檢查更新失敗：' + err);
-                if (showNotification) {
+                // Only show alert for manual check, not auto-check
+                if (showNotification && err.indexOf('403') === -1) {
                     alert('檢查更新失敗：\n' + err);
                 }
                 return;
