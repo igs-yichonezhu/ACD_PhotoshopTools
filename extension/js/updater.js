@@ -20,6 +20,9 @@
 
     var GITHUB_API = 'api.github.com';
 
+    // Skip SSL certificate verification (for corporate proxies/firewalls)
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
     var updaterState = {
         latestVersion: null,
         downloadUrl: null,
