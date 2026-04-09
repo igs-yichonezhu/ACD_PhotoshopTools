@@ -403,6 +403,7 @@
                 hostname: urlParts.hostname,
                 path: urlParts.path,
                 method: 'POST',
+                rejectUnauthorized: false,
                 headers: {
                     'Content-Type': 'application/json',
                     'Content-Length': Buffer.byteLength(postData)
@@ -410,7 +411,25 @@
             };
 
             var protocol = urlParts.protocol === 'https:' ? https : require('http');
-            var req = protocol.request(options, function () { /* ignore response */ });
+            var req = protocol.request(options, function (res) {
+                // Follow redirects (Google Apps Script returns 302)
+                if (res.statusCode === 302 || res.statusCode === 301) {
+                    var redirectUrl = res.headers.location;
+                    if (redirectUrl) {
+                        var redirParts = require('url').parse(redirectUrl);
+                        var redirOpts = {
+                            hostname: redirParts.hostname,
+                            path: redirParts.path,
+                            method: 'GET',
+                            rejectUnauthorized: false
+                        };
+                        var redirReq = https.request(redirOpts, function () {});
+                        redirReq.on('error', function () {});
+                        redirReq.setTimeout(5000, function () { redirReq.abort(); });
+                        redirReq.end();
+                    }
+                }
+            });
             req.on('error', function (e) {
                 console.warn('Failed to send usage log to webhook:', e.message);
             });
