@@ -79,32 +79,42 @@ jobs:
           echo "Installer size:"
           ls -lh igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe
 
-      # 6. Create GitHub Release (uses RELEASE_NOTES.md if exists, otherwise default)
+      # 6. Auto-generate release notes from commit history
       - name: Prepare release notes
         id: notes
         run: |
-          if [ -f RELEASE_NOTES.md ]; then
-            echo "Using custom release notes"
-            # Escape for GitHub Actions
-            NOTES=$(cat RELEASE_NOTES.md)
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          # 找到上一個 tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "v${VERSION}" | head -1)
+
+          # 產生 commit log
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from ${PREV_TAG} to v${VERSION}"
+            COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s" --no-merges | grep -v "Co-Authored-By" | grep -v "^$")
           else
-            NOTES="暫無更新說明"
+            echo "No previous tag found, using all commits"
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges | grep -v "Co-Authored-By" | grep -v "^$")
           fi
-          # Write to file for gh-release
-          cat > /tmp/release_body.md << 'HEREDOC'
-          ## IGS ACD Art Tools v${{ steps.version.outputs.VERSION }}
+
+          # 組合 release body
+          cat > /tmp/release_body.md << EOF
+          ## IGS ACD Art Tools v${VERSION}
+
+          ### 更新內容
+          ${COMMITS}
 
           ### 首次安裝
-          下載 `igs-arttools-setup-v${{ steps.version.outputs.VERSION }}.exe` 雙擊安裝即可。
+          下載 \`igs-arttools-setup-v${VERSION}.exe\` 雙擊安裝即可。
           安裝時 Repository 已預填，Token 留空即可（公開模式）。
 
           ### 已安裝的用戶
           - **自動更新：** 開啟 Photoshop 插件面板，如有偵測到新版本會自動提示更新
           - **手動更新：** 點擊面板右上角 ↻ 按鈕檢查更新
 
-          HEREDOC
-          cat RELEASE_NOTES.md >> /tmp/release_body.md 2>/dev/null || true
-          echo -e "\n---\n*此 Release 由 GitHub Actions 自動產生*" >> /tmp/release_body.md
+          ---
+          *此 Release 由 GitHub Actions 自動產生*
+          EOF
 
       # 7. Copy docs for release attachment
       - name: Prepare docs
