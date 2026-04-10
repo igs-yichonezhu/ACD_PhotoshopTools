@@ -225,10 +225,13 @@
             updaterState.isChecking = false;
 
             if (err) {
-                App.setStatus('檢查更新失敗：' + err);
-                // Only show alert for manual check, not auto-check
-                if (showNotification && err.indexOf('403') === -1) {
-                    alert('檢查更新失敗：\n' + err);
+                if (err.indexOf('403') !== -1) {
+                    App.setStatus('要求次數過多，一小時後恢復');
+                } else {
+                    App.setStatus('檢查更新失敗：' + err);
+                    if (showNotification) {
+                        alert('檢查更新失敗：\n' + err);
+                    }
                 }
                 return;
             }
