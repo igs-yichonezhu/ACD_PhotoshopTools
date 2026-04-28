@@ -31,3 +31,7 @@ extension/cocos-importer/
 # Temp / log files
 *.tmp
 *.log
+
+# Maintainer-only local scripts (not for distribution)
+sync-from-deployed.bat
+sync-to-deployed.bat
