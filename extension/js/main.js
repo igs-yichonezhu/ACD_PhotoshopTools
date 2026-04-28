@@ -21,6 +21,7 @@
         workflow: '工作流程',
         layer: '圖層工具',
         ui: 'UI 工具',
+        comfyui: 'ComfyUI',
         resource: '共用資源',
         other: '其他'
     };
@@ -32,7 +33,8 @@
         currentTool: null,
         config: {},
         extensionPath: '',
-        configPath: ''
+        configPath: '',
+        toolBusy: { isBusy: false, message: '' }
     };
 
     // ============================================
@@ -457,6 +459,8 @@
         var title = document.getElementById('toolTitle');
 
         title.textContent = tool.name;
+        // Reset busy state for the new iframe
+        state.toolBusy = { isBusy: false, message: '' };
         iframe.src = 'file:///' + tool.entry.replace(/\\/g, '/');
 
         homeView.classList.add('hidden');
@@ -466,6 +470,24 @@
     }
 
     function goHome() {
+        // Busy guard: if current tool reported a running task, confirm before killing
+        if (state.toolBusy && state.toolBusy.isBusy) {
+            var msg = state.toolBusy.message
+                ? '目前任務尚未完成：\n\n' + state.toolBusy.message + '\n\n返回會中斷任務'
+                : '目前工具有任務正在執行，返回會中斷任務';
+            confirmDialog({
+                title: '確認返回',
+                message: msg,
+                okText: '返回',
+                cancelText: '繼續',
+                onOk: function () { doGoHome(); }
+            });
+            return;
+        }
+        doGoHome();
+    }
+
+    function doGoHome() {
         // Log tool close
         if (state.currentTool) {
             logToolUsage(state.currentTool.id, state.currentTool.name, 'close');
@@ -481,6 +503,8 @@
         // Unload iframe
         iframe.src = 'about:blank';
         state.currentTool = null;
+        // Reset busy state (the tool's JS context is now gone)
+        state.toolBusy = { isBusy: false, message: '' };
 
         setStatus('就緒 - 已載入 ' + state.tools.length + ' 個工具');
     }
@@ -538,6 +562,21 @@
             case 'mkdir':
                 // Create directory recursively
                 handleMkdir(data, event.source);
+                break;
+
+            case 'set-busy':
+                // Tool reports it has a long-running task in progress
+                // Format: { type:'set-busy', busy:bool, message:'...' }
+                state.toolBusy = {
+                    isBusy: !!data.busy,
+                    message: data.message || ''
+                };
+                break;
+
+            case 'confirm-dialog':
+                // Tool requests a styled confirm modal with custom button labels
+                // Format: { type:'confirm-dialog', callId, title, message, okText, cancelText }
+                handleConfirmDialog(data, event.source);
                 break;
 
             default:
@@ -700,6 +739,68 @@
         document.getElementById('settingsModal').classList.remove('visible');
     }
 
+    /**
+     * Handle a confirm-dialog request from a tool iframe.
+     * Replies with { type:'confirm-dialog-response', callId, ok:bool }
+     */
+    function handleConfirmDialog(data, source) {
+        confirmDialog({
+            title: data.title || '確認',
+            message: data.message || '',
+            okText: data.okText || '確定',
+            cancelText: data.cancelText || '取消',
+            onOk: function () {
+                if (source) {
+                    try { source.postMessage({ type: 'confirm-dialog-response', callId: data.callId, ok: true }, '*'); } catch(e) {}
+                }
+            },
+            onCancel: function () {
+                if (source) {
+                    try { source.postMessage({ type: 'confirm-dialog-response', callId: data.callId, ok: false }, '*'); } catch(e) {}
+                }
+            }
+        });
+    }
+
+    /**
+     * Show a confirm modal with custom button labels.
+     * @param {Object} opts
+     * @param {string} opts.title       Modal title
+     * @param {string} opts.message     Body text (\n preserved)
+     * @param {string} [opts.okText]    Primary action button label (default "確定")
+     * @param {string} [opts.cancelText] Secondary button label (default "取消")
+     * @param {Function} [opts.onOk]    Callback when ok pressed
+     * @param {Function} [opts.onCancel] Callback when cancel pressed (or backdrop)
+     */
+    function confirmDialog(opts) {
+        var modal = document.getElementById('confirmModal');
+        var titleEl = document.getElementById('confirmTitle');
+        var msgEl = document.getElementById('confirmMessage');
+        var okBtn = document.getElementById('confirmOkBtn');
+        var cancelBtn = document.getElementById('confirmCancelBtn');
+
+        titleEl.textContent = opts.title || '確認';
+        msgEl.textContent = opts.message || '';
+        okBtn.textContent = opts.okText || '確定';
+        cancelBtn.textContent = opts.cancelText || '取消';
+
+        function close() {
+            modal.classList.remove('visible');
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+        }
+        okBtn.onclick = function () {
+            close();
+            if (typeof opts.onOk === 'function') opts.onOk();
+        };
+        cancelBtn.onclick = function () {
+            close();
+            if (typeof opts.onCancel === 'function') opts.onCancel();
+        };
+
+        modal.classList.add('visible');
+    }
+
     function saveSettings() {
         var token = document.getElementById('inputToken').value.trim();
         var repo = document.getElementById('inputRepo').value.trim();
@@ -725,6 +826,7 @@
         showSettings: showSettings,
         hideSettings: hideSettings,
         saveSettings: saveSettings,
+        confirmDialog: confirmDialog,
         setStatus: setStatus,
         getState: function () { return state; },
         getConfig: function () { return state.config; },

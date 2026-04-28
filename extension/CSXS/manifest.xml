@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="12.0" ExtensionBundleId="com.igs.arttools" ExtensionBundleVersion="1.0.0"
+<ExtensionManifest Version="12.0" ExtensionBundleId="com.igs.arttools" ExtensionBundleVersion="1.6.2"
     ExtensionBundleName="IGS ACD Art Tools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <ExtensionList>
-        <Extension Id="com.igs.arttools.panel" Version="1.0.0" />
+        <Extension Id="com.igs.arttools.panel" Version="1.6.2" />
     </ExtensionList>
 
     <ExecutionEnvironment>

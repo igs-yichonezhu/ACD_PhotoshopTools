@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>SeedVR2 放大修正</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #2b2b2b;
+    color: #e0e0e0;
+    font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 12px;
+    user-select: none;
+  }
+  h3 {
+    font-size: 13px;
+    color: #c89b3c;
+    margin: 0 0 4px 0;
+    text-align: center;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 10px;
+    text-align: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+  }
+  .section {
+    background: #323232;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .layer-name {
+    color: #c89b3c;
+    font-weight: 600;
+    font-size: 12px;
+    word-break: break-all;
+    min-height: 16px;
+  }
+  .layer-dim {
+    color: #888;
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  label {
+    display: block;
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 4px;
+  }
+  input[type="number"] {
+    width: 100%;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  input:focus { outline: none; border-color: #c89b3c; }
+
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    color: #fff;
+    transition: opacity 0.15s;
+  }
+  .btn:hover:not(:disabled) { opacity: 0.85; }
+  .btn:disabled { background: #555; color: #999; cursor: not-allowed; }
+  .btn-primary { background: #c89b3c; color: #1a1a1a; }
+  .btn-secondary { background: #3a3a3a; color: #e0e0e0; margin-top: 6px; }
+  .btn-cancel { background: #c14545; color: #fff; margin-top: 6px; }
+
+  .progress-wrap {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 3px;
+    height: 6px;
+    overflow: hidden;
+    margin: 8px 0;
+    display: none; /* 預設隱藏，執行時才顯示 */
+  }
+  .progress-wrap.active { display: block; }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #c89b3c;
+    transition: width 0.4s ease;
+  }
+  .status-text {
+    font-size: 11px;
+    color: #aaa;
+    line-height: 1.5;
+    min-height: 28px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: center;
+  }
+  .status-text.error { color: #ff8a80; }
+  .status-text.ok    { color: #6abf6a; }
+
+  /* ---- Log Panel ---- */
+  .log-section { padding-bottom: 6px; }
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .log-clear-btn {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #999;
+    font-size: 9px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .log-clear-btn:hover { background: #3a3a3a; color: #ddd; }
+  .log-panel {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 3px;
+    height: 140px;
+    overflow-y: auto;
+    padding: 6px 8px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .log-panel::-webkit-scrollbar { width: 4px; }
+  .log-panel::-webkit-scrollbar-track { background: transparent; }
+  .log-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+  .log-line {
+    display: flex;
+    gap: 6px;
+    padding: 1px 0;
+    word-break: break-all;
+  }
+  .log-time { color: #666; flex-shrink: 0; }
+  .log-msg { color: #ccc; flex: 1; }
+  .log-msg.info  { color: #ccc; }
+  .log-msg.ok    { color: #6abf6a; }
+  .log-msg.warn  { color: #e8a854; }
+  .log-msg.error { color: #ff8a80; }
+  .log-msg.api   { color: #87ceeb; }
+  .log-empty { color: #555; font-style: italic; text-align: center; padding: 6px 0; }
+</style>
+</head>
+<body>
+
+<h3>SeedVR2 放大修正</h3>
+<div class="subtitle">RunningHub 雲端放大</div>
+
+<div class="section">
+  <div class="section-title">目前圖層</div>
+  <div class="layer-name" id="layerName">尚未偵測</div>
+  <div class="layer-dim" id="layerDim">—</div>
+  <button class="btn btn-secondary" onclick="refreshLayerInfo()">重新讀取圖層</button>
+</div>
+
+<div class="section">
+  <div class="section-title">放大設定</div>
+  <label for="targetSize">目標長邊 (px)</label>
+  <input type="number" id="targetSize" value="2160" min="512" max="4320" step="8">
+</div>
+
+<div class="section">
+  <div class="section-title">執行</div>
+  <button class="btn btn-primary" id="runBtn" onclick="runUpscale()">執行放大修正</button>
+  <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="status-text" id="statusText">就緒</div>
+  <div style="font-size:10px;color:#666;text-align:center;margin-top:6px;">如要中止任務，請按上方「← 返回」</div>
+</div>
+
+<div class="section log-section">
+  <div class="log-header">
+    <div class="section-title" style="margin-bottom:0;">執行記錄</div>
+    <button class="log-clear-btn" onclick="clearLog()">清除</button>
+  </div>
+  <div class="log-panel" id="logPanel">
+    <div class="log-empty" id="logEmpty">尚無記錄</div>
+  </div>
+</div>
+
+<!-- 設定檔（API Key 等） -->
+<script src="./config.js"></script>
+
+<script>
+// ============================================================
+// PostMessage Bridge：跟主框架溝通呼叫 PS API
+// （此段抄自同仁工具範本，請勿改動）
+// ============================================================
+var callCounter = 0;
+var pendingCalls = {};
+
+function callPsApi(action, params) {
+  return new Promise(function (resolve, reject) {
+    var callId = 'call_' + (++callCounter);
+    pendingCalls[callId] = { resolve: resolve, reject: reject };
+    window.parent.postMessage({
+      type: 'ps-api',
+      action: action,
+      params: params || {},
+      callId: callId
+    }, '*');
+    setTimeout(function () {
+      if (pendingCalls[callId]) {
+        delete pendingCalls[callId];
+        reject('Request timeout');
+      }
+    }, 60000);
+  });
+}
+
+window.addEventListener('message', function (event) {
+  var data = event.data;
+  if (!data) return;
+  if (data.type === 'ps-api-response') {
+    var pending = pendingCalls[data.callId];
+    if (!pending) return;
+    delete pendingCalls[data.callId];
+    if (data.error) pending.reject(data.error);
+    else pending.resolve(data.result);
+  } else if (data.type === 'confirm-dialog-response') {
+    var p = pendingCalls[data.callId];
+    if (!p) return;
+    delete pendingCalls[data.callId];
+    p.resolve(data.ok === true);
+  }
+});
+
+function parseResult(result) {
+  var data = (typeof result === 'string') ? JSON.parse(result) : result;
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// 寫入暫存檔（透過主框架 fs 寫入二進位）
+function saveTempFile(filePath, arrayBuffer) {
+  var uint8 = new Uint8Array(arrayBuffer);
+  var binary = '';
+  // 分塊轉字串避免 stack overflow
+  var chunkSize = 0x8000;
+  for (var i = 0; i < uint8.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, uint8.subarray(i, i + chunkSize));
+  }
+  window.parent.postMessage({
+    type: 'save-temp-file',
+    filePath: filePath,
+    binaryData: binary
+  }, '*');
+}
+
+// ============================================================
+// UI 工具
+// ============================================================
+var CFG = window.SEEDVR2_CONFIG;
+var ui = {
+  layerName: document.getElementById('layerName'),
+  layerDim:  document.getElementById('layerDim'),
+  targetSize:document.getElementById('targetSize'),
+  runBtn:    document.getElementById('runBtn'),
+  progress:    document.getElementById('progressBar'),
+  progressWrap:document.getElementById('progressWrap'),
+  status:    document.getElementById('statusText'),
+  logPanel:  document.getElementById('logPanel'),
+  logEmpty:  document.getElementById('logEmpty')
+};
+
+function showProgress(show) {
+  if (show) ui.progressWrap.classList.add('active');
+  else      ui.progressWrap.classList.remove('active');
+}
+
+// 通知主框架「工具忙碌中」，按返回會跳確認框
+function setBusy(busy, message) {
+  try {
+    window.parent.postMessage({
+      type: 'set-busy',
+      busy: !!busy,
+      message: message || ''
+    }, '*');
+  } catch(e) {}
+}
+
+// 透過主框架顯示自訂按鈕文字的確認框
+function confirmDialogAsync(opts) {
+  return new Promise(function (resolve) {
+    var callId = 'confirm_' + (++callCounter);
+    pendingCalls[callId] = {
+      resolve: function (result) { resolve(result === true); },
+      reject:  function () { resolve(false); }
+    };
+    window.parent.postMessage({
+      type: 'confirm-dialog',
+      callId: callId,
+      title: opts.title || '確認',
+      message: opts.message || '',
+      okText: opts.okText || '確定',
+      cancelText: opts.cancelText || '取消'
+    }, '*');
+  });
+}
+
+// 狀態保存的 localStorage key
+var STORAGE_KEY = 'seedvr2_state_v1';
+var LOG_MAX_ENTRIES = 200;
+
+function setStatus(msg, type) {
+  ui.status.textContent = msg;
+  ui.status.className = 'status-text' + (type ? ' ' + type : '');
+  patchState({ lastStatus: { msg: msg, type: type || null } });
+}
+function setProgress(pct) {
+  var v = Math.max(0, Math.min(100, pct));
+  ui.progress.style.width = v + '%';
+  patchState({ lastProgress: v });
+}
+
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+// ============================================================
+// Log 面板
+// ============================================================
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function nowTime() {
+  var d = new Date();
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+}
+
+function appendLogLine(time, msg, type) {
+  if (ui.logEmpty) { ui.logEmpty.style.display = 'none'; }
+  var line = document.createElement('div');
+  line.className = 'log-line';
+  var t = document.createElement('span');
+  t.className = 'log-time';
+  t.textContent = time;
+  var m = document.createElement('span');
+  m.className = 'log-msg ' + (type || 'info');
+  m.textContent = msg;
+  line.appendChild(t);
+  line.appendChild(m);
+  ui.logPanel.appendChild(line);
+  ui.logPanel.scrollTop = ui.logPanel.scrollHeight;
+}
+
+function addLog(msg, type) {
+  var time = nowTime();
+  appendLogLine(time, msg, type);
+  // Persist
+  try {
+    var st = loadState();
+    st.log = st.log || [];
+    st.log.push({ t: time, m: msg, ty: type || 'info' });
+    if (st.log.length > LOG_MAX_ENTRIES) {
+      st.log = st.log.slice(-LOG_MAX_ENTRIES);
+    }
+    saveState(st);
+  } catch(e) {}
+}
+
+function clearLog() {
+  ui.logPanel.innerHTML = '<div class="log-empty" id="logEmpty">尚無記錄</div>';
+  ui.logEmpty = document.getElementById('logEmpty');
+  try {
+    var st = loadState();
+    st.log = [];
+    saveState(st);
+  } catch(e) {}
+}
+
+// ============================================================
+// 狀態保存／恢復（離開工具回來後仍可看見 log + 上次狀態）
+// ============================================================
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) || {};
+  } catch(e) { return {}; }
+}
+
+function saveState(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state || {}));
+  } catch(e) {}
+}
+
+function patchState(patch) {
+  var st = loadState();
+  for (var k in patch) {
+    if (patch.hasOwnProperty(k)) st[k] = patch[k];
+  }
+  saveState(st);
+}
+
+function restoreState() {
+  var st = loadState();
+  // 恢復 log
+  if (st.log && st.log.length > 0) {
+    ui.logEmpty.style.display = 'none';
+    for (var i = 0; i < st.log.length; i++) {
+      appendLogLine(st.log[i].t, st.log[i].m, st.log[i].ty);
+    }
+  }
+  // 恢復上次狀態文字
+  if (st.lastStatus) {
+    setStatus(st.lastStatus.msg, st.lastStatus.type);
+  }
+  // 恢復目標尺寸
+  if (st.targetSize) {
+    ui.targetSize.value = st.targetSize;
+  }
+  // 恢復進度（僅顯示，不續跑）
+  if (typeof st.lastProgress === 'number') {
+    setProgress(st.lastProgress);
+  }
+}
+
+// 同時更新 status + log
+function logStatus(msg, type) {
+  setStatus(msg, type === 'error' ? 'error' : (type === 'ok' ? 'ok' : null));
+  addLog(msg, type);
+}
+
+// ============================================================
+// 偵測目前圖層
+// ============================================================
+function refreshLayerInfo() {
+  // 用一段 ExtendScript 一次取回圖層名 + 圖層 bounds + 文件尺寸
+  var jsx =
+    'try {' +
+    '  if (app.documents.length === 0) { "ERR:NO_DOC"; }' +
+    '  else {' +
+    '    var d = app.activeDocument;' +
+    '    var l = d.activeLayer;' +
+    '    if (!l) { "ERR:NO_LAYER"; }' +
+    '    else {' +
+    '      var lw = 0, lh = 0;' +
+    '      try {' +
+    '        var b = l.bounds;' +
+    '        lw = Math.round(b[2].as("px") - b[0].as("px"));' +
+    '        lh = Math.round(b[3].as("px") - b[1].as("px"));' +
+    '      } catch(eb) {}' +
+    '      l.name + "|" + lw + "x" + lh + "|" +' +
+    '        Math.round(d.width.as("px")) + "x" + Math.round(d.height.as("px"));' +
+    '    }' +
+    '  }' +
+    '} catch(e) { "ERR:" + e.toString(); }';
+
+  var callId = 'call_' + (++callCounter);
+  pendingCalls[callId] = {
+    resolve: function (result) {
+      if (typeof result !== 'string' || result.indexOf('ERR:') === 0) {
+        ui.layerName.textContent = '（請先開啟文件並選取圖層）';
+        ui.layerDim.textContent = '—';
+        addLog('讀取圖層失敗：' + (result || '無回應'), 'warn');
+        return;
+      }
+      var parts = result.split('|');
+      ui.layerName.textContent = parts[0] || '（無）';
+      var ldim = parts[1] || '0x0';
+      var ddim = parts[2] || '0x0';
+      ui.layerDim.textContent = '圖層 ' + ldim.replace('x', ' × ') + ' px　|　文件 ' + ddim.replace('x', ' × ') + ' px';
+      addLog('已讀取：' + (parts[0] || '?') + ' (' + ldim + ' px)', 'info');
+    },
+    reject: function () {
+      ui.layerName.textContent = '（讀取失敗）';
+      ui.layerDim.textContent = '—';
+      addLog('讀取圖層逾時', 'error');
+    }
+  };
+  window.parent.postMessage({ type: 'ps-jsx', script: jsx, callId: callId }, '*');
+  setTimeout(function () {
+    if (pendingCalls[callId]) { delete pendingCalls[callId]; }
+  }, 5000);
+}
+
+// ============================================================
+// 主流程：放大修正
+// ============================================================
+async function runUpscale() {
+
+  // 設定檔檢查
+  if (!CFG || !CFG.API_KEY || /請在這裡填入/.test(CFG.API_KEY)) {
+    logStatus('尚未設定 API Key，請聯絡管理者', 'error');
+    return;
+  }
+  if (!CFG.WORKFLOW_ID) {
+    logStatus('尚未設定 workflowId，請聯絡管理者', 'error');
+    return;
+  }
+
+  // ─── 圖層選取檢查（B + G1）───
+  // - 多選 2+ 個 → 跳警告，僅處理 activeLayer
+  // - Folder/群組 → 提示會扁平化整個群組
+  try {
+    var selResult = await callPsApi('getSelectionInfo');
+    var selData = parseResult(selResult);
+    var sel = selData.data || selData;
+    var activeName = (sel.active && sel.active.name) || '(未選取)';
+    var isGroup    = sel.active && sel.active.isGroup;
+    var count      = sel.selectedCount || 1;
+
+    // 多選警告
+    if (count > 1) {
+      var others = (sel.selectedNames || []).filter(function (n) { return n !== activeName; });
+      var msg = '你目前在 PS 選了 ' + count + ' 張圖層，' +
+                '但本工具一次只能處理 1 張。\n\n' +
+                '將只處理：' + activeName + (isGroup ? '（群組會被扁平化）' : '') + '\n' +
+                (others.length > 0 ? '其他將被忽略：\n  • ' + others.slice(0, 5).join('\n  • ') + (others.length > 5 ? '\n  • …' : '') : '') +
+                '\n\n是否繼續？';
+      var ok = await confirmDialogAsync({
+        title: '偵測到多選圖層',
+        message: msg,
+        okText: '繼續',
+        cancelText: '取消'
+      });
+      if (!ok) {
+        logStatus('已取消（請在 PS 中只選一個圖層後重試）', 'error');
+        return;
+      }
+      addLog('多選確認：將只處理「' + activeName + '」', 'warn');
+    } else if (isGroup) {
+      // 單選但是群組 → 提示扁平化
+      var ok2 = await confirmDialogAsync({
+        title: '群組將被扁平化',
+        message: '目前選取的是群組「' + activeName + '」。\n\n' +
+                 '本工具會把整個群組合併為單張圖片再上傳放大。\n' +
+                 '原 PSD 不會被修改，群組結構保留。\n\n' +
+                 '是否繼續？',
+        okText: '繼續',
+        cancelText: '取消'
+      });
+      if (!ok2) {
+        logStatus('已取消', 'error');
+        return;
+      }
+      addLog('群組確認：「' + activeName + '」將被扁平化處理', 'warn');
+    }
+  } catch (selErr) {
+    addLog('讀取選取狀態失敗：' + (selErr.message || selErr) + '（將直接處理 activeLayer）', 'warn');
+  }
+
+  ui.runBtn.disabled = true;
+  showProgress(true);
+  setProgress(0);
+  addLog('━━━ 開始執行放大流程 ━━━', 'info');
+  addLog('目標長邊：' + ui.targetSize.value + ' px', 'info');
+  // 保存目標尺寸
+  patchState({ targetSize: ui.targetSize.value });
+  // 通知主框架：忙碌中，按返回會出現確認框
+  setBusy(true, 'SeedVR2 放大任務進行中（雲端運算可能耗時數分鐘）');
+
+  try {
+    // ─── 步驟 1：透過主框架匯出圖層為 PNG（會記錄圖層名以便最後放回）───
+    logStatus('[1/7] 匯出圖層為 PNG…'); setProgress(8);
+    var exportResult = await callPsApi('exportActiveLayerAsPNG');
+    var exported = parseResult(exportResult);
+    var srcPngPath = exported.filePath;
+    var layerName  = exported.layerName;
+    addLog('圖層名稱：' + layerName, 'ok');
+    addLog('暫存路徑：' + srcPngPath, 'info');
+
+    // ─── 步驟 2：讀取 PNG 檔（用 fetch file://）───
+    logStatus('[2/7] 讀取暫存圖檔…'); setProgress(14);
+    var srcUrl = 'file:///' + srcPngPath + '?t=' + Date.now();
+    var srcResp = await fetch(srcUrl);
+    var srcBuffer = await srcResp.arrayBuffer();
+    addLog('檔案大小：' + (srcBuffer.byteLength/1024).toFixed(1) + ' KB', 'ok');
+
+    if (srcBuffer.byteLength > CFG.MAX_UPLOAD_BYTES) {
+      throw new Error('圖層轉檔後 ' + (srcBuffer.byteLength/1024/1024).toFixed(1) +
+                      'MB，超過 RunningHub 10MB 上限');
+    }
+
+    // ─── 步驟 3：上傳 RunningHub ───
+    logStatus('[3/7] 上傳至 RunningHub…', 'api'); setProgress(20);
+    var uploadedFileName = await uploadToRunningHub(srcBuffer);
+    addLog('上傳完成：' + uploadedFileName, 'ok');
+
+    // ─── 步驟 4：建立任務 ───
+    logStatus('[4/7] 建立放大任務…', 'api'); setProgress(28);
+    var taskId = await createTask(uploadedFileName, ui.targetSize.value);
+    addLog('任務 ID：' + taskId, 'ok');
+
+    // ─── 步驟 5：輪詢直到完成 ───
+    logStatus('[5/7] 等待運算 (taskId=' + taskId + ')…');
+    var fileUrl = await pollTaskUntilDone(taskId);
+    addLog('運算完成，結果 URL：' + fileUrl.substring(0, 80) + '…', 'ok');
+
+    // ─── 步驟 6：下載結果 ───
+    logStatus('[6/7] 下載結果…'); setProgress(92);
+    var resultResp = await fetch(fileUrl);
+    if (!resultResp.ok) throw new Error('下載結果失敗：HTTP ' + resultResp.status);
+    var resultBuffer = await resultResp.arrayBuffer();
+    addLog('下載完成：' + (resultBuffer.byteLength/1024/1024).toFixed(2) + ' MB', 'ok');
+
+    // ─── 步驟 7：寫入暫存後開為新 PSD ───
+    logStatus('[7/7] 開啟為新 PSD…'); setProgress(98);
+    var ext = (fileUrl.split('?')[0].split('.').pop() || 'png').toLowerCase();
+    var resultPath = srcPngPath.replace(/[^/\\]+$/, 'seedvr2_result_' + Date.now() + '.' + ext);
+    saveTempFile(resultPath, resultBuffer);
+
+    // 等檔案寫入完成
+    await sleep(600);
+
+    // 開啟結果檔，duplicate 成「未存儲新文件」（沒有實體檔關聯，使用者可自由另存）
+    var newDocName = '[SeedVR2_Fixed]_' + layerName;
+    var jsxPath = resultPath.replace(/\\/g, '/');
+    var jsx =
+      'try {' +
+      '  var f = new File("' + jsxPath + '");' +
+      '  if (!f.exists) { "ERR: file not found"; }' +
+      '  else {' +
+      '    var openedDoc = app.open(f);' +
+      '    var dupDoc = openedDoc.duplicate("' + newDocName.replace(/"/g, '\\"') + '");' +
+      '    openedDoc.close(SaveOptions.DONOTSAVECHANGES);' +
+      '    "OK";' +
+      '  }' +
+      '} catch(e) { "ERR: " + e.toString(); }';
+
+    var jsxResult = await new Promise(function (resolve, reject) {
+      var callId = 'call_' + (++callCounter);
+      pendingCalls[callId] = { resolve: resolve, reject: reject };
+      window.parent.postMessage({
+        type: 'ps-jsx',
+        script: jsx,
+        callId: callId
+      }, '*');
+      setTimeout(function () {
+        if (pendingCalls[callId]) { delete pendingCalls[callId]; reject('Timeout'); }
+      }, 30000);
+    });
+
+    if (typeof jsxResult === 'string' && jsxResult.indexOf('ERR:') === 0) {
+      throw new Error(jsxResult);
+    }
+
+    setProgress(100);
+    logStatus('完成 ✓ 已開啟新 PSD「' + newDocName + '"', 'ok');
+    addLog('━━━ 流程結束 ━━━', 'ok');
+
+  } catch (err) {
+    console.error(err);
+    setProgress(0);
+    logStatus('錯誤：' + (err.message || err), 'error');
+    addLog('━━━ 流程中止 ━━━', 'error');
+  } finally {
+    ui.runBtn.disabled = false;
+    showProgress(false); // 隱藏進度條
+    // 通知主框架：忙碌結束
+    setBusy(false);
+  }
+}
+
+// ============================================================
+// RunningHub API：上傳
+// ============================================================
+async function uploadToRunningHub(arrayBuffer) {
+  var form = new FormData();
+  form.append('apiKey', CFG.API_KEY);
+  form.append('fileType', 'image');
+  var blob = new Blob([arrayBuffer], { type: 'image/png' });
+  form.append('file', blob, 'image.png');
+
+  var resp = await fetch(CFG.BASE_URL + '/task/openapi/upload', {
+    method: 'POST',
+    body: form
+  });
+  var json = await resp.json().catch(function(){ return {}; });
+  if (!resp.ok || json.code !== 0) {
+    throw new Error('上傳失敗：' + (json.msg || resp.status));
+  }
+  return json.data.fileName;
+}
+
+// ============================================================
+// RunningHub API：建立任務
+// ============================================================
+async function createTask(uploadedFileName, targetSize) {
+  var nodeInfoList = [
+    { nodeId: CFG.INPUT_NODE_ID,   fieldName: 'image',          fieldValue: uploadedFileName },
+    { nodeId: CFG.CONTROL_NODE_ID, fieldName: 'resolution',     fieldValue: Number(targetSize) },
+    { nodeId: CFG.CONTROL_NODE_ID, fieldName: 'max_resolution', fieldValue: Number(targetSize) }
+  ];
+
+  var resp = await fetch(CFG.BASE_URL + '/task/openapi/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      apiKey: CFG.API_KEY,
+      workflowId: CFG.WORKFLOW_ID,
+      nodeInfoList: nodeInfoList
+    })
+  });
+  var json = await resp.json().catch(function(){ return {}; });
+  if (!resp.ok || json.code !== 0) {
+    var msg = json.msg || resp.status;
+    if (/queue|MAXED/i.test(String(msg))) {
+      throw new Error('RunningHub 任務佇列已滿，請稍候再試 (' + msg + ')');
+    }
+    if (/balance|insufficient|額度|coin/i.test(String(msg))) {
+      throw new Error('RunningHub 額度不足：' + msg);
+    }
+    throw new Error('建立任務失敗：' + msg);
+  }
+  return json.data.taskId;
+}
+
+// ============================================================
+// RunningHub API：輪詢結果（先查 status，SUCCESS 才取 outputs）
+// ============================================================
+async function pollTaskUntilDone(taskId) {
+  var statusErrCount = 0;
+
+  for (var i = 0; i < CFG.POLL_MAX_ATTEMPTS; i++) {
+    // ─── 先查任務狀態 ───
+    var sResp = await fetch(CFG.BASE_URL + '/task/openapi/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: CFG.API_KEY, taskId: taskId })
+    });
+    var sJson = await sResp.json().catch(function(){ return {}; });
+
+    var status = '';
+    if (sJson.code === 0) {
+      // RunningHub 回傳格式：data 可能是字串 "SUCCESS" 或物件 {taskStatus:"SUCCESS"}
+      status = (typeof sJson.data === 'string')
+        ? sJson.data
+        : (sJson.data && (sJson.data.taskStatus || sJson.data.status)) || '';
+    }
+
+    var sMsg = sJson.msg || '';
+
+    // 結束狀態
+    if (status === 'SUCCESS') {
+      addLog('狀態：SUCCESS，取得結果中…', 'api');
+      setStatus('取得結果…');
+      var oResp = await fetch(CFG.BASE_URL + '/task/openapi/outputs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: CFG.API_KEY, taskId: taskId })
+      });
+      var oJson = await oResp.json().catch(function(){ return {}; });
+      if (oJson.code === 0 && Array.isArray(oJson.data) && oJson.data.length > 0) {
+        var img = oJson.data.find(function(d){ return d.fileUrl; }) || oJson.data[0];
+        if (!img.fileUrl) throw new Error('結果無 fileUrl');
+        return img.fileUrl;
+      }
+      throw new Error('取結果失敗：' + (oJson.msg || 'unknown'));
+    }
+    if (status === 'FAILED') {
+      throw new Error('任務失敗（請至 RunningHub 後台查看詳情）');
+    }
+
+    // 進行中
+    var stage = '初始化中';
+    if (status === 'QUEUED' || sMsg.indexOf('QUEUED') >= 0) stage = '排隊中';
+    else if (status === 'RUNNING' || sMsg.indexOf('RUNNING') >= 0) stage = '運算中';
+
+    // 連續 STATUS_ERROR 太多次代表任務真的有問題
+    if (sMsg === 'APIKEY_TASK_STATUS_ERROR') {
+      statusErrCount++;
+      addLog('STATUS_ERROR (' + statusErrCount + '/8)', 'warn');
+      if (statusErrCount > 8) {
+        throw new Error('RunningHub 持續回報 STATUS_ERROR，請至後台確認任務狀態');
+      }
+    } else {
+      statusErrCount = 0;
+    }
+
+    // 每 5 次或狀態變化才記錄一次到 log，避免洗版
+    if (i === 0 || i % 5 === 0 || (i > 0 && stage !== window._lastStage)) {
+      addLog('輪詢 #' + (i + 1) + ' 狀態：' + (status || stage), 'api');
+      window._lastStage = stage;
+    }
+
+    var pct = 30 + Math.min(60, (i / 60) * 60);
+    setProgress(pct);
+    setStatus(stage + '…(' + (i + 1) + ')');
+    await sleep(CFG.POLL_INTERVAL_MS);
+  }
+  throw new Error('輪詢逾時，請至 RunningHub 後台查看任務狀態');
+}
+
+// ============================================================
+// 啟動
+// ============================================================
+ui.targetSize.value = CFG.DEFAULT_TARGET_SIZE;
+restoreState(); // 恢復離開前的狀態（log + status + 上次目標尺寸）
+refreshLayerInfo();
+</script>
+
+</body>
+</html>

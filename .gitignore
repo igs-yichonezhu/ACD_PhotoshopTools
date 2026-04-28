@@ -18,6 +18,10 @@ config.json
 # Build output
 installer/*.exe
 
+# Installer artifacts deployed alongside extension
+extension/uninstall.exe
+extension/cocos-importer/
+
 # IDE
 .vscode/
 .idea/

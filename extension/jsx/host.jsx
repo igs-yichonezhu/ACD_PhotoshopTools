@@ -432,6 +432,77 @@ function IGS_rgbToHex(r, g, b) {
 }
 
 // ============================================
+// 5b. Selection Info - Detect multi-selected layers
+//     回傳：選了幾個圖層、active 那個的資訊
+// ============================================
+
+function IGS_getSelectionInfo() {
+    try {
+        if (app.documents.length === 0) {
+            return IGS_jsonStringify({error: 'NO_DOCUMENT'});
+        }
+        var doc = app.activeDocument;
+
+        // 嘗試讀取 targetLayers (Action Manager)
+        var selectedCount = 1;
+        var selectedNames = [];
+        try {
+            var ref = new ActionReference();
+            ref.putProperty(stringIDToTypeID('property'), stringIDToTypeID('targetLayers'));
+            ref.putEnumerated(stringIDToTypeID('document'), stringIDToTypeID('ordinal'), stringIDToTypeID('targetEnum'));
+            var desc = executeActionGet(ref);
+            if (desc.hasKey(stringIDToTypeID('targetLayers'))) {
+                var list = desc.getList(stringIDToTypeID('targetLayers'));
+                selectedCount = list.count;
+                // 取得每個被選圖層的名稱（透過 itemIndex）
+                for (var i = 0; i < list.count; i++) {
+                    try {
+                        var idx = list.getReference(i).getIndex();
+                        // PS 沒有背景時 index 從 0 算，有背景時從 1 算
+                        // 直接抓名字
+                        var nameRef = new ActionReference();
+                        nameRef.putProperty(stringIDToTypeID('property'), stringIDToTypeID('name'));
+                        // index 需要做修正（背景圖層）
+                        var hasBg = false;
+                        try { hasBg = doc.backgroundLayer ? true : false; } catch(e) {}
+                        nameRef.putIndex(charIDToTypeID('Lyr '), idx + (hasBg ? 1 : 0));
+                        var nameDesc = executeActionGet(nameRef);
+                        var n = nameDesc.getString(stringIDToTypeID('name'));
+                        selectedNames.push(n);
+                    } catch(eName) {}
+                }
+            }
+        } catch(eAm) {}
+
+        // active layer 資訊
+        var active = null;
+        try {
+            var al = doc.activeLayer;
+            var isGroup = false;
+            try { isGroup = (al.typename === 'LayerSet'); } catch(e) {}
+            active = {
+                name: al.name,
+                isGroup: isGroup,
+                isBackground: al.isBackgroundLayer || false
+            };
+        } catch(e) {
+            active = null;
+        }
+
+        return IGS_jsonStringify({
+            success: true,
+            data: {
+                selectedCount: selectedCount,
+                selectedNames: selectedNames,
+                active: active
+            }
+        });
+    } catch(e) {
+        return IGS_jsonStringify({error: String(e)});
+    }
+}
+
+// ============================================
 // 6. FX Remove BG - Export active layer as temp PNG
 // ============================================
 
@@ -593,6 +664,103 @@ function IGS_replaceLayerWithPNG(pngPath, layerName) {
         tempFile.remove();
 
         return IGS_jsonStringify({success: true, layerName: savedName});
+    } catch(e) {
+        return IGS_jsonStringify({error: String(e)});
+    }
+}
+
+// ============================================
+// 8b. SeedVR2 - Place upscaled PNG back into ORIGINAL document
+//     - Opens result PNG, copies, closes
+//     - Pastes into original doc as new layer above the target layer
+//     - Scales the result down to match the target layer's bounds
+//     - Positions to match target layer location
+//     - Names with prefix
+// ============================================
+
+function IGS_placeUpscaledAsLayer(pngPath, targetLayerName, prefix) {
+    try {
+        if (app.documents.length === 0) return IGS_jsonStringify({error: 'No document open'});
+
+        var originalDoc = app.activeDocument;
+
+        // Find target layer by name (provided by caller, captured before upscale)
+        var targetLayer = null;
+        function findByName(layers, name) {
+            for (var i = 0; i < layers.length; i++) {
+                if (layers[i].name === name) return layers[i];
+                try {
+                    if (layers[i].layers) {
+                        var sub = findByName(layers[i].layers, name);
+                        if (sub) return sub;
+                    }
+                } catch(e) {}
+            }
+            return null;
+        }
+        if (targetLayerName) {
+            targetLayer = findByName(originalDoc.layers, targetLayerName);
+        }
+        if (!targetLayer) targetLayer = originalDoc.activeLayer;
+        if (!targetLayer) return IGS_jsonStringify({error: 'Target layer not found: ' + targetLayerName});
+
+        // Capture original bounds (in pixels)
+        var origBounds = targetLayer.bounds;
+        var origLeft   = origBounds[0].as('px');
+        var origTop    = origBounds[1].as('px');
+        var origRight  = origBounds[2].as('px');
+        var origBottom = origBounds[3].as('px');
+        var origW = origRight - origLeft;
+        var origH = origBottom - origTop;
+
+        var tempFile = new File(pngPath);
+        if (!tempFile.exists) return IGS_jsonStringify({error: 'Result file not found: ' + pngPath});
+
+        // Open the upscaled result, copy, close
+        var resultDoc = app.open(tempFile);
+        resultDoc.selection.selectAll();
+        resultDoc.selection.copy();
+        resultDoc.close(SaveOptions.DONOTSAVECHANGES);
+
+        // Back to original doc; set active layer = target so paste lands above it
+        app.activeDocument = originalDoc;
+        originalDoc.activeLayer = targetLayer;
+        originalDoc.paste();
+
+        var newLayer = originalDoc.activeLayer;
+
+        // Name the new layer with prefix
+        var pfx = prefix || '[SeedVR2_Fixed]_';
+        newLayer.name = pfx + targetLayerName;
+
+        // Scale new layer DOWN to match original layer bounds (keep visual footprint)
+        var newBounds = newLayer.bounds;
+        var newW = newBounds[2].as('px') - newBounds[0].as('px');
+        var newH = newBounds[3].as('px') - newBounds[1].as('px');
+
+        if (newW > 0 && newH > 0 && origW > 0 && origH > 0) {
+            // Use horizontal scale ratio (assume aspect preserved)
+            var scalePct = (origW / newW) * 100;
+            newLayer.resize(scalePct, scalePct, AnchorPosition.MIDDLECENTER);
+
+            // Reposition: align to original layer's top-left
+            var resizedBounds = newLayer.bounds;
+            var dx = origLeft - resizedBounds[0].as('px');
+            var dy = origTop  - resizedBounds[1].as('px');
+            if (dx !== 0 || dy !== 0) {
+                newLayer.translate(UnitValue(dx, 'px'), UnitValue(dy, 'px'));
+            }
+        }
+
+        // Clean up temp file
+        try { tempFile.remove(); } catch(e) {}
+
+        return IGS_jsonStringify({
+            success: true,
+            layerName: newLayer.name,
+            origSize: { width: origW, height: origH },
+            upscaledSize: { width: newW, height: newH }
+        });
     } catch(e) {
         return IGS_jsonStringify({error: String(e)});
     }

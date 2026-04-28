@@ -1,0 +1,9 @@
+{
+    "name": "SeedVR2 放大修正",
+    "icon": "icon.png",
+    "entry": "index.html",
+    "version": "1.0.0",
+    "description": "將目前圖層送至 RunningHub SeedVR2 雲端放大，回傳為新圖層",
+    "category": ["image", "workflow", "comfyui"],
+    "minPsVersion": "20.0"
+}

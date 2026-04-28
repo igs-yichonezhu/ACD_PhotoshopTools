@@ -758,6 +758,13 @@
       resultPanel.style.display = 'none';
       document.getElementById('exportBtn').disabled = true;
       exportCancelled = false;
+      // 通知主框架：忙碌中
+      try {
+        window.parent.postMessage({
+          type: 'set-busy', busy: true,
+          message: 'UI 匯出進行中（每張圖層需要 PS 處理時間）'
+        }, '*');
+      } catch(e) {}
 
       var docW = docInfo.width;
       var docH = docInfo.height;
@@ -946,6 +953,7 @@
       if (exportCancelled) {
         progressPanel.style.display = 'none';
         document.getElementById('exportBtn').disabled = false;
+        try { window.parent.postMessage({ type: 'set-busy', busy: false }, '*'); } catch(e) {}
         resultPanel.style.display = 'block';
         resultPanel.style.background = 'var(--error-dim)';
         resultPanel.style.borderColor = 'var(--error)';
@@ -962,6 +970,7 @@
       // Done
       progressPanel.style.display = 'none';
       document.getElementById('exportBtn').disabled = false;
+      try { window.parent.postMessage({ type: 'set-busy', busy: false }, '*'); } catch(e) {}
 
       resultPanel.style.display = 'block';
       resultPanel.style.background = 'var(--success-dim)';

@@ -290,6 +290,13 @@
         // ============================================
 
         /**
+         * Get selection info (selected layer count, active layer details)
+         */
+        getSelectionInfo: function (params, callback) {
+            evalJSX('IGS_getSelectionInfo()', callback);
+        },
+
+        /**
          * Export active layer as temp PNG for processing
          */
         exportActiveLayerAsPNG: function (params, callback) {
@@ -316,6 +323,20 @@
             var pngPath = escJSX((params.pngPath || '').replace(/\\/g, '/'));
             var layerName = escJSX(params.layerName || '');
             evalJSX('IGS_replaceLayerWithPNG("' + pngPath + '", "' + layerName + '")', callback);
+        },
+
+        /**
+         * Place an upscaled PNG back into the ORIGINAL document as a new layer
+         * scaled down to match the target layer's bounds.
+         * @param {string} params.pngPath - Path to the upscaled result PNG
+         * @param {string} params.targetLayerName - Original layer name to match
+         * @param {string} [params.prefix] - Layer name prefix (default "[SeedVR2_Fixed]_")
+         */
+        placeUpscaledAsLayer: function (params, callback) {
+            var pngPath = escJSX((params.pngPath || '').replace(/\\/g, '/'));
+            var targetLayerName = escJSX(params.targetLayerName || '');
+            var prefix = escJSX(params.prefix || '[SeedVR2_Fixed]_');
+            evalJSX('IGS_placeUpscaledAsLayer("' + pngPath + '", "' + targetLayerName + '", "' + prefix + '")', callback);
         },
 
         /**
