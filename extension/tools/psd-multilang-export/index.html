@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>PSD 多語系出圖</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #1e1e1e;
+    color: #e8e8e8;
+    font-family: "Adobe Clean", "Segoe UI", -apple-system, sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 12px;
+    user-select: none;
+    line-height: 1.5;
+  }
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+  .section {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .field-row { margin-bottom: 8px; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-row .label { color: #999; min-width: 90px; flex-shrink: 0; }
+  .field-row .value { color: #ddd; flex: 1; word-break: break-all; }
+  .field-row .value.warn  { color: #e8a854; }
+  .field-row .value.error { color: #f14c4c; }
+  .field-row .value.ok    { color: #4ec9b0; }
+
+  input[type="text"] {
+    flex: 1;
+    background: #1a1a1a;
+    color: #e8e8e8;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 11px;
+    outline: none;
+    font-family: inherit;
+  }
+  input[type="text"]:focus { border-color: #3794ff; box-shadow: 0 0 0 1px rgba(55,148,255,0.12); }
+
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    color: #fff;
+    transition: filter 0.15s;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.15); }
+  .btn:disabled { background: #3a3a3a; color: #666; cursor: not-allowed; }
+  .btn-primary { background: #3794ff; }
+  .btn-secondary { background: #3a3a3a; color: #ddd; padding: 5px 10px; font-size: 10px; font-weight: 500; width: auto; }
+
+  .matched-list { font-size: 11px; color: #ccc; padding-left: 8px; line-height: 1.7; }
+  .matched-list .tag {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    background: rgba(78,201,176,0.12); color: #4ec9b0;
+    font-size: 9px; font-weight: 600; margin-right: 4px;
+  }
+
+  /* Lang config */
+  .lang-list { margin-bottom: 8px; }
+  .lang-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px;
+    background: #1a1a1a;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+  .lang-item .lang-keyword { color: #ddd; flex: 1; font-family: "Consolas", monospace; }
+  .lang-item .lang-arrow { color: #666; font-size: 10px; }
+  .lang-item .lang-suffix {
+    background: rgba(55,148,255,0.15); color: #3794ff;
+    padding: 1px 8px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; font-family: "Consolas", monospace;
+  }
+  .lang-item .lang-del {
+    background: none; border: none;
+    color: #666; cursor: pointer;
+    font-size: 14px; padding: 0 4px; line-height: 1;
+    border-radius: 3px;
+  }
+  .lang-item .lang-del:hover { color: #f14c4c; background: rgba(241,76,76,0.1); }
+
+  .lang-empty { color: #666; font-style: italic; font-size: 11px; padding: 6px; text-align: center; }
+
+  /* Mode selector (segmented control) */
+  .mode-row {
+    display: flex; gap: 0;
+    margin-bottom: 8px;
+    background: #1a1a1a;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 2px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 5px 8px;
+    background: transparent;
+    color: #999;
+    border: none;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .mode-btn:hover { color: #ddd; }
+  .mode-btn.active {
+    background: #3794ff;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* Log */
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .log-panel {
+    background: #1a1a1a;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    height: 130px;
+    overflow-y: auto;
+    padding: 6px 8px;
+    font-family: "Consolas", monospace;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .log-line { display: flex; gap: 6px; padding: 1px 0; word-break: break-all; }
+  .log-time { color: #666; flex-shrink: 0; }
+  .log-msg { flex: 1; }
+  .log-msg.info { color: #ccc; }
+  .log-msg.ok    { color: #4ec9b0; }
+  .log-msg.warn  { color: #e8a854; }
+  .log-msg.error { color: #f14c4c; }
+  .log-empty { color: #555; font-style: italic; text-align: center; padding: 6px 0; }
+</style>
+</head>
+<body>
+
+<h3>PSD 多語系出圖</h3>
+
+<div class="section">
+  <div class="section-title">當前 PSD</div>
+  <div class="field-row">
+    <span class="label">檔案：</span>
+    <span class="value" id="docName">—</span>
+  </div>
+  <div class="field-row">
+    <span class="label">存檔狀態：</span>
+    <span class="value" id="docSaved">—</span>
+  </div>
+  <div class="field-row">
+    <span class="label">預設輸出路徑：</span>
+    <span class="value" id="pdStatus">—</span>
+  </div>
+  <button class="btn btn-secondary" onclick="refresh()" style="margin-top:6px;">重新偵測</button>
+</div>
+
+<div class="section">
+  <div class="section-title">輸出位置</div>
+  <div class="mode-row">
+    <button class="mode-btn active" data-mode="auto"   onclick="setMode('auto')">自動</button>
+    <button class="mode-btn"        data-mode="manual" onclick="setMode('manual')">手動指定</button>
+  </div>
+  <div class="field-row" id="manualRow" style="display:none;">
+    <input type="text" id="manualPath" placeholder="貼上輸出資料夾路徑" />
+  </div>
+  <div class="field-row">
+    <span class="label">將會輸出到：</span>
+    <span class="value" id="effectivePath">—</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">語系設定（共用，規則：群組關鍵字 → 後綴）</div>
+  <div class="lang-list" id="langList"></div>
+  <div class="lang-source" id="langSource" style="font-size:10px;color:#666;margin-top:6px;line-height:1.5;"></div>
+</div>
+
+<div id="suggestionContainer"></div>
+
+<div class="section">
+  <div class="section-title">執行</div>
+  <div id="runHint" style="font-size:11px;text-align:center;margin-bottom:8px;min-height:16px;"></div>
+  <button class="btn btn-primary" id="runBtn" onclick="runExport()">執行多語系出圖</button>
+  <div style="font-size:10px;color:#666;text-align:center;margin-top:6px;">如要中止，請按上方「← 返回」</div>
+</div>
+
+<div class="section">
+  <div class="log-header">
+    <div class="section-title" style="margin-bottom:0;">執行記錄</div>
+    <button class="btn btn-secondary" onclick="clearLog()">清除</button>
+  </div>
+  <div class="log-panel" id="logPanel">
+    <div class="log-empty" id="logEmpty">尚無記錄</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PostMessage Bridge
+// ============================================================
+var callCounter = 0;
+var pendingCalls = {};
+
+function callPsApi(action, params) {
+  return new Promise(function (resolve, reject) {
+    var callId = 'call_' + (++callCounter);
+    pendingCalls[callId] = { resolve: resolve, reject: reject };
+    window.parent.postMessage({ type: 'ps-api', action: action, params: params || {}, callId: callId }, '*');
+    setTimeout(function () {
+      if (pendingCalls[callId]) { delete pendingCalls[callId]; reject('Timeout'); }
+    }, 60000);
+  });
+}
+window.addEventListener('message', function (event) {
+  var data = event.data;
+  if (!data || data.type !== 'ps-api-response') return;
+  var p = pendingCalls[data.callId];
+  if (!p) return;
+  delete pendingCalls[data.callId];
+  if (data.error) p.reject(data.error); else p.resolve(data.result);
+});
+function parseResult(result) {
+  var d = (typeof result === 'string') ? JSON.parse(result) : result;
+  if (d.error) { var err = new Error(d.error); err.data = d.data; throw err; }
+  return d.data || d;
+}
+function setBusy(busy, message) {
+  try { window.parent.postMessage({ type: 'set-busy', busy: !!busy, message: message || '' }, '*'); } catch(e) {}
+}
+
+// ============================================================
+// 設定
+// 語系設定來自同目錄的 psd_export_langs.jsonc（隨 release 共用）
+// 個人手動指定路徑等仍用 localStorage 暫存
+// ============================================================
+var FALLBACK_LANGS = [
+  { keyword: '_CHT使用', suffix: 'CHT' },
+  { keyword: '_EN使用',  suffix: 'EN'  }
+];
+
+var STORAGE_KEY = 'psd_multilang_v1';
+function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; } }
+function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {} }
+function patchState(p) { var s = loadState(); for (var k in p) if (p.hasOwnProperty(k)) s[k] = p[k]; saveState(s); }
+
+// 當前生效的語系（從 jsonc 讀來；fetch 失敗時 fallback）
+var currentLangs = FALLBACK_LANGS.slice();
+var langsSource = '';     // 顯示給使用者看：目前語系從哪來
+var langsLoaded = false;  // 是否成功從 jsonc 載入
+
+// 使用者本機自行加入的語系（localStorage）
+function loadUserLangs() {
+  var s = loadState();
+  return Array.isArray(s.userLangs) ? s.userLangs : [];
+}
+function setUserLangs(arr) { patchState({ userLangs: arr }); }
+function addUserLang(L) {
+  var arr = loadUserLangs();
+  for (var i = 0; i < arr.length; i++) if (arr[i].keyword === L.keyword) return false;
+  arr.push(L);
+  setUserLangs(arr);
+  return true;
+}
+function removeUserLang(keyword) {
+  var arr = loadUserLangs().filter(function (L) { return L.keyword !== keyword; });
+  setUserLangs(arr);
+}
+
+// 完整生效列表 = jsonc 共用 + 本機新增
+function getLangs() {
+  return currentLangs.concat(loadUserLangs());
+}
+
+// 從 jsonc 讀取（去 BOM + 去 // 行註解 + 行尾註解，跟 host.jsx 同套規則）
+async function loadLangsFromJsonc() {
+  var url = window.location.href.replace(/[^/]*$/, 'psd_export_langs.jsonc');
+  try {
+    var resp = await fetch(url + '?t=' + Date.now()); // 防快取
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var text = await resp.text();
+    text = text.replace(/^﻿/, '');
+    text = text.replace(/^\s*\/\/[^\n]*$/gm, '');
+    text = text.replace(/([^:\\])\/\/[^\n]*$/gm, '$1');
+    var obj = JSON.parse(text);
+    if (!obj || !Array.isArray(obj.languages) || obj.languages.length === 0) {
+      throw new Error('檔案內無 languages 陣列');
+    }
+    // 驗證每筆都有 keyword + suffix
+    for (var i = 0; i < obj.languages.length; i++) {
+      var L = obj.languages[i];
+      if (!L.keyword || !L.suffix) throw new Error('第 ' + (i+1) + ' 筆缺少 keyword 或 suffix');
+    }
+    currentLangs = obj.languages;
+    langsSource  = '從 psd_export_langs.jsonc 載入（共用設定）';
+    langsLoaded  = true;
+    return true;
+  } catch(e) {
+    currentLangs = FALLBACK_LANGS.slice();
+    langsSource  = '⚠ jsonc 讀取失敗，使用內建預設：' + e.message;
+    langsLoaded  = false;
+    return false;
+  }
+}
+
+// ============================================================
+// UI 元素
+// ============================================================
+var ui = {
+  docName:       document.getElementById('docName'),
+  docSaved:      document.getElementById('docSaved'),
+  pdStatus:      document.getElementById('pdStatus'),
+  manualPath:    document.getElementById('manualPath'),
+  effectivePath: document.getElementById('effectivePath'),
+  langList:      document.getElementById('langList'),
+  runBtn:        document.getElementById('runBtn'),
+  logPanel:      document.getElementById('logPanel'),
+  logEmpty:      document.getElementById('logEmpty')
+};
+
+// ============================================================
+// 語系設定 UI
+// ============================================================
+// 當前 PSD 已匹配的 keyword（給 renderLangList 標 ✓）
+var matchedKeywords = {};
+
+function renderLangList() {
+  var jsoncLangs = currentLangs;
+  var userLangs  = loadUserLangs();
+  var html = '';
+
+  function langRow(L, isUser) {
+    var matched = !!matchedKeywords[L.keyword];
+    var status = matched
+      ? '<span style="color:#4ec9b0;font-size:10px;" title="當前 PSD 中有對應群組">✓ 在當前 PSD</span>'
+      : '<span style="color:#666;font-size:10px;" title="當前 PSD 沒有此群組">— 未出現</span>';
+    var srcIcon = isUser
+      ? '<span style="color:#e8a854;font-size:10px;flex-shrink:0;" title="本機新增">👤</span>'
+      : '<span style="color:#3794ff;font-size:10px;flex-shrink:0;" title="共用設定">📦</span>';
+    var delBtn = isUser
+      ? '<button class="lang-del" onclick="removeUserLangAndRefresh(\'' + escapeAttr(L.keyword) + '\')" title="刪除">✕</button>'
+      : '';
+    return '<div class="lang-item">' +
+           srcIcon +
+           '<span class="lang-keyword">' + escapeHtml(L.keyword) + '</span>' +
+           '<span class="lang-arrow">→</span>' +
+           '<span class="lang-suffix">_' + escapeHtml(L.suffix) + '.png</span>' +
+           status +
+           delBtn +
+           '</div>';
+  }
+
+  for (var i = 0; i < jsoncLangs.length; i++) html += langRow(jsoncLangs[i], false);
+  for (var j = 0; j < userLangs.length; j++) html += langRow(userLangs[j], true);
+
+  if (html === '') {
+    ui.langList.innerHTML = '<div class="lang-empty">尚無語系設定</div>';
+  } else {
+    ui.langList.innerHTML = html;
+  }
+
+  var srcEl = document.getElementById('langSource');
+  if (srcEl) {
+    var hint = langsLoaded
+      ? '📦 共用設定（隨 release 更新） │ 👤 本機新增（僅自己看到）│ ✓ 表示當前 PSD 中有對應群組'
+      : '<span style="color:#e8a854;">' + langsSource + '</span>';
+    srcEl.innerHTML = hint;
+  }
+}
+
+function escapeAttr(s) { return String(s).replace(/'/g, '\\\''); }
+
+function removeUserLangAndRefresh(keyword) {
+  removeUserLang(keyword);
+  renderLangList();
+  addLog('已從本機移除：' + keyword, 'info');
+  refresh();
+}
+
+// 從「偵測到未配置」按鈕呼叫，加入本機個人語系設定
+function addSuggestionToLocal(keyword, suffix) {
+  var added = addUserLang({ keyword: keyword, suffix: suffix });
+  if (added) {
+    addLog('已加入本機語系：' + keyword + ' → _' + suffix + '.png', 'ok');
+    renderLangList();
+    refresh();
+  } else {
+    addLog('語系「' + keyword + '」已存在', 'warn');
+  }
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 重新從 jsonc 載入（手動觸發；正常開啟時會自動載一次）
+async function reloadLangs() {
+  await loadLangsFromJsonc();
+  renderLangList();
+  addLog(langsLoaded ? '已重新載入語系設定' : '⚠ 語系載入失敗：' + langsSource, langsLoaded ? 'ok' : 'warn');
+  refresh();
+}
+
+// ============================================================
+// Log
+// ============================================================
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function nowTime() { var d = new Date(); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()); }
+function appendLogLine(time, msg, type) {
+  if (ui.logEmpty) ui.logEmpty.style.display = 'none';
+  var line = document.createElement('div'); line.className = 'log-line';
+  var t = document.createElement('span'); t.className = 'log-time'; t.textContent = time;
+  var m = document.createElement('span'); m.className = 'log-msg ' + (type || 'info'); m.textContent = msg;
+  line.appendChild(t); line.appendChild(m);
+  ui.logPanel.appendChild(line);
+  ui.logPanel.scrollTop = ui.logPanel.scrollHeight;
+}
+function addLog(msg, type) {
+  var time = nowTime();
+  appendLogLine(time, msg, type);
+  var s = loadState(); s.log = s.log || [];
+  s.log.push({ t: time, m: msg, ty: type || 'info' });
+  if (s.log.length > 200) s.log = s.log.slice(-200);
+  saveState(s);
+}
+function clearLog() {
+  ui.logPanel.innerHTML = '<div class="log-empty" id="logEmpty">尚無記錄</div>';
+  ui.logEmpty = document.getElementById('logEmpty');
+  patchState({ log: [] });
+}
+
+// ============================================================
+// 偵測
+// ============================================================
+function setStatus(field, text, cls) {
+  ui[field].textContent = text;
+  ui[field].className = 'value' + (cls ? ' ' + cls : '');
+}
+
+// 三種模式：auto / psd / manual
+var currentMode = 'auto';
+
+function setMode(m) {
+  currentMode = m;
+  // 切換按鈕狀態
+  var btns = document.querySelectorAll('.mode-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].dataset.mode === m);
+  }
+  // 顯示 / 隱藏手動輸入欄
+  document.getElementById('manualRow').style.display = (m === 'manual') ? 'flex' : 'none';
+  patchState({ mode: m });
+  recomputeEffectivePath(lastPrereq);
+}
+
+function recomputeEffectivePath(prereq) {
+  if (currentMode === 'manual') {
+    var manual = ui.manualPath.value.trim();
+    if (manual) setStatus('effectivePath', manual, 'ok');
+    else        setStatus('effectivePath', '（請在上方輸入路徑）', 'warn');
+    return;
+  }
+  // auto：優先 project_data NAS，否則 PSD 同層
+  if (prereq && prereq.pdNasPath) {
+    setStatus('effectivePath', prereq.pdNasPath + '   (來自 project_data.json)', 'ok');
+  } else if (prereq && prereq.psdDir) {
+    setStatus('effectivePath', prereq.psdDir + '   (PSD 同層)', 'ok');
+  } else {
+    setStatus('effectivePath', '—');
+  }
+}
+
+var lastPrereq = null;
+async function refresh() {
+  try {
+    var raw = await callPsApi('checkMultilangPrereq', { langsJson: JSON.stringify(getLangs()) });
+    var data = parseResult(raw);
+    lastPrereq = data;
+
+    if (!data.hasDoc) {
+      setStatus('docName', '（沒有開啟文件）', 'warn');
+      setStatus('docSaved', '—');
+      setStatus('pdStatus', '—');
+      ui.matchedList.textContent = '請先開啟 PSD';
+      ui.runBtn.disabled = true;
+      recomputeEffectivePath(null);
+      return;
+    }
+
+    setStatus('docName', data.docName, 'ok');
+    setStatus('docSaved', data.docSaved ? '✓ 已存檔' : '⚠ 有未存檔變更', data.docSaved ? 'ok' : 'warn');
+
+    if (!data.hasFile) {
+      setStatus('pdStatus', 'PSD 尚未存檔到磁碟', 'error');
+    } else if (data.pdExists && data.pdNasPath) {
+      setStatus('pdStatus', '✓ 自動偵測到：' + data.pdNasPath, 'ok');
+    } else if (data.pdExists) {
+      setStatus('pdStatus', '⚠ Tool A 設定檔內無 NAS 路徑（用手動指定或 #出圖）', 'warn');
+    } else {
+      setStatus('pdStatus', '無（請在下方手動指定，或用 PSD 同層 #出圖 資料夾）', 'warn');
+    }
+
+    // 更新 matchedKeywords 給 renderLangList 使用
+    matchedKeywords = {};
+    if (data.matchedGroups) {
+      for (var mm = 0; mm < data.matchedGroups.length; mm++) {
+        // matched group 沒有直接給 keyword，要從 suffix 反推（langs 裡找）
+        // 但其實 host.jsx 的 matched 沒回傳 keyword，需要從名稱推或改 host 也回傳
+        // 這裡用 suffix 比對 langs
+        var foundKw = null;
+        var allLangs = getLangs();
+        for (var ll = 0; ll < allLangs.length; ll++) {
+          if (allLangs[ll].suffix === data.matchedGroups[mm].suffix) {
+            foundKw = allLangs[ll].keyword;
+            break;
+          }
+        }
+        if (foundKw) matchedKeywords[foundKw] = true;
+      }
+    }
+    renderLangList(); // 重新渲染語系列表（更新 ✓ 標記）
+
+    // 偵測 PSD 裡的「未配置語系」（_XXX使用 但 langs 沒有）
+    var allG = data.allTopGroups || [];
+    var allConfigured = getLangs();
+    var configuredKws = {};
+    for (var c = 0; c < allConfigured.length; c++) configuredKws[allConfigured[c].keyword] = true;
+
+    var detectedSuggestions = [];
+    var seen = {};
+    for (var s2 = 0; s2 < allG.length; s2++) {
+      var name = allG[s2];
+      var mt = name.match(/_([^_]+)使用/);
+      if (mt) {
+        var kw = '_' + mt[1] + '使用';
+        if (!configuredKws[kw] && !seen[kw]) {
+          seen[kw] = true;
+          detectedSuggestions.push({ keyword: kw, suffix: mt[1], groupName: name });
+        }
+      }
+    }
+
+    // 渲染建議區（在 #suggestionContainer）
+    var sugCt = document.getElementById('suggestionContainer');
+    if (detectedSuggestions.length > 0) {
+      var sHtml = '<div class="section" style="border-color:rgba(232,168,84,0.4);">' +
+                  '<div class="section-title" style="color:#e8a854;">📌 偵測到 PSD 中未配置的語系</div>';
+      for (var d = 0; d < detectedSuggestions.length; d++) {
+        var sg = detectedSuggestions[d];
+        sHtml += '<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:4px 0;">' +
+                 '<span style="color:#ddd;flex:1;">' + escapeHtml(sg.groupName) + '</span>' +
+                 '<span style="color:#666;font-size:10px;">→ _' + escapeHtml(sg.suffix) + '.png</span>' +
+                 '<button class="btn btn-secondary" style="padding:3px 10px;font-size:10px;" ' +
+                 'onclick="addSuggestionToLocal(\'' + escapeAttr(sg.keyword) + '\',\'' + escapeAttr(sg.suffix) + '\')">+ 加入本機</button>' +
+                 '</div>';
+      }
+      sHtml += '</div>';
+      sugCt.innerHTML = sHtml;
+    } else {
+      sugCt.innerHTML = '';
+    }
+
+    // 執行按鈕：只有「真的不能執行」時才停用（沒有任何匹配群組）
+    var hasMatches = data.matchedGroups && data.matchedGroups.length > 0;
+    ui.runBtn.disabled = !hasMatches;
+
+    // 提示文字（顯示在按鈕上方）
+    var hint = document.getElementById('runHint');
+    if (!data.hasDoc) {
+      hint.innerHTML = '<span style="color:#f14c4c;">⚠ 請先在 PS 開啟 PSD</span>';
+    } else if (!data.hasFile) {
+      hint.innerHTML = '<span style="color:#f14c4c;">⚠ PSD 尚未存檔到磁碟，請先 Ctrl+Shift+S 另存</span>';
+    } else if (!data.docSaved) {
+      hint.innerHTML = '<span style="color:#e8a854;">⚠ PSD 有未存檔變更，請先 Ctrl+S 存檔</span>';
+    } else if (!hasMatches) {
+      hint.innerHTML = '<span style="color:#e8a854;">⚠ 沒有可匹配的語系群組</span>';
+    } else {
+      hint.innerHTML = '<span style="color:#4ec9b0;">✓ 準備好，將匯出 ' + data.matchedGroups.length + ' 個語系</span>';
+    }
+
+    recomputeEffectivePath(data);
+  } catch(e) {
+    addLog('偵測失敗：' + (e.message || e), 'error');
+  }
+}
+
+// 手動路徑輸入時即時更新 + 持久化
+ui.manualPath.addEventListener('input', function () {
+  patchState({ manualPath: ui.manualPath.value });
+  recomputeEffectivePath(lastPrereq);
+});
+
+// ============================================================
+// 執行
+// ============================================================
+async function runExport() {
+  ui.runBtn.disabled = true;
+  setBusy(true, 'PSD 多語系出圖進行中…');
+  addLog('━━━ 開始執行多語系出圖 ━━━', 'info');
+
+  // 依模式決定要傳給 host 的路徑（空字串 = 讓 host 自動處理 project_data → #出圖）
+  var sendPath = '';
+  if (currentMode === 'manual') {
+    sendPath = ui.manualPath.value.trim();
+    if (!sendPath) {
+      addLog('手動模式但未填路徑，已中止', 'error');
+      ui.runBtn.disabled = false;
+      setBusy(false);
+      return;
+    }
+    addLog('模式：手動指定 → ' + sendPath, 'info');
+  } else {
+    addLog('模式：自動（project_data NAS → PSD 同層）', 'info');
+  }
+
+  try {
+    var raw = await callPsApi('runMultilangExport', {
+      langsJson: JSON.stringify(getLangs()),
+      manualOutputPath: sendPath
+    });
+    var data = parseResult(raw);
+
+    addLog('輸出位置：' + data.outputFolder + '   (' + data.sourceUsed + ')', 'ok');
+    if (data.fallbackUsed) {
+      addLog('⚠ 使用本地 fallback：' + data.fallbackReason, 'warn');
+    }
+    addLog('成功匯出 ' + data.exported.length + ' 個檔案：', 'ok');
+    for (var i = 0; i < data.exported.length; i++) addLog('  • ' + data.exported[i], 'info');
+    addLog('━━━ 完成 ━━━', 'ok');
+  } catch(err) {
+    var code = err.message || '';
+    var msgMap = {
+      'NO_DOCUMENT':           '沒有開啟任何 PSD',
+      'PSD_NOT_SAVED':         'PSD 尚未存檔到磁碟，請先 Ctrl+S 存檔',
+      'PSD_HAS_UNSAVED_CHANGES':'PSD 有未存檔的變更，請先 Ctrl+S',
+      'NO_MATCHED_GROUPS':     '找不到符合語系關鍵字的群組（_CHT使用 / _EN使用…）'
+    };
+    var humanMsg = msgMap[code] || code;
+    if (code === 'EXPORT_FAILED' && err.data) {
+      humanMsg = '出圖失敗：' + err.data.failed.name + '\n錯誤：' + err.data.failed.err;
+      addLog('已成功 ' + err.data.exported.length + ' 個', 'warn');
+    }
+    addLog('錯誤：' + humanMsg, 'error');
+    addLog('━━━ 中止 ━━━', 'error');
+  } finally {
+    ui.runBtn.disabled = false;
+    setBusy(false);
+    // 完成後重新偵測一次（顯示最新的存檔狀態）
+    refresh();
+  }
+}
+
+// ============================================================
+// 啟動：恢復狀態 + 第一次偵測
+// ============================================================
+(async function init() {
+  var s = loadState();
+  // 恢復手動路徑
+  if (s.manualPath) ui.manualPath.value = s.manualPath;
+  // 恢復模式（預設 auto）
+  setMode(s.mode || 'auto');
+  // 恢復 log
+  if (s.log && s.log.length > 0) {
+    ui.logEmpty.style.display = 'none';
+    for (var i = 0; i < s.log.length; i++) appendLogLine(s.log[i].t, s.log[i].m, s.log[i].ty);
+  }
+  // 從 jsonc 載入語系設定（共用）
+  await loadLangsFromJsonc();
+  renderLangList();
+  refresh();
+})();
+</script>
+
+</body>
+</html>

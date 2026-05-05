@@ -351,6 +351,30 @@
         },
 
         // ============================================
+        // Multilang PSD Export (Tool B)
+        // ============================================
+
+        /**
+         * Check prerequisite for multilang export.
+         * @param {string} params.langsJson - JSON string of langs array (optional)
+         */
+        checkMultilangPrereq: function (params, callback) {
+            var langsJson = escJSX(params.langsJson || '');
+            evalJSX('IGS_checkMultilangPrereq("' + langsJson + '")', callback);
+        },
+
+        /**
+         * Run multilang export.
+         * @param {string} params.langsJson - JSON string of langs array
+         * @param {string} params.manualOutputPath - Output folder (optional; empty = auto)
+         */
+        runMultilangExport: function (params, callback) {
+            var langsJson = escJSX(params.langsJson || '');
+            var outPath = escJSX((params.manualOutputPath || '').replace(/\\/g, '/'));
+            evalJSX('IGS_runMultilangExport("' + langsJson + '", "' + outPath + '")', callback);
+        },
+
+        // ============================================
         // 7. UI to Cocos Operations
         // ============================================
 

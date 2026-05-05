@@ -1,0 +1,9 @@
+{
+    "name": "PSD 多語系出圖",
+    "icon": "icon.png",
+    "entry": "index.html",
+    "version": "1.0.0",
+    "description": "依語系群組關鍵字（_CHT使用、_EN使用…）自動輪流顯隱並匯出 PNG",
+    "category": ["image", "export", "workflow"],
+    "minPsVersion": "20.0"
+}

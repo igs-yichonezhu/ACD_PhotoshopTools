@@ -1294,3 +1294,273 @@ function IGS_exportLayerByPath(layerPath, outputPath) {
         return IGS_error(String(e));
     }
 }
+
+// ============================================
+// Multilang PSD Export (Tool B)
+//   - 掃描 PSD 第一層 group，比對語系關鍵字
+//   - 輪流顯隱、匯出 PNG
+//   - 輸出位置優先順序：
+//       1. 呼叫端傳入的 manualPath（若有）
+//       2. project_data.json 的 target_nas_path（若同目錄存在）
+//       3. PSD 同層的 #出圖 資料夾（最終 fallback）
+// ============================================
+
+function _IGS_parseJSONC(text) {
+    if (!text) return null;
+    text = String(text).replace(/^﻿/, '');
+    text = text.replace(/^\s*\/\/[^\n]*$/gm, '');
+    text = text.replace(/([^:\\])\/\/[^\n]*$/gm, '$1');
+    try { return eval('(' + text + ')'); } catch(e) { return null; }
+}
+
+// ExtendScript 沒有原生 JSON.parse，用 eval 包一層當代用
+function _IGS_parseJSON(text) {
+    if (!text) return null;
+    try { return eval('(' + String(text) + ')'); } catch(e) { return null; }
+}
+
+function _IGS_readTextFile(file) {
+    if (!file.exists) return null;
+    file.encoding = 'UTF-8';
+    if (!file.open('r')) return null;
+    var t = file.read();
+    file.close();
+    return t;
+}
+
+/**
+ * 檢查當前 PSD 的多語系出圖前置條件
+ * 回傳：PSD 路徑、是否存檔、project_data.json 是否存在、target_nas_path、匹配到的群組數
+ */
+function IGS_checkMultilangPrereq(langsJson) {
+    try {
+        if (!app.documents.length) {
+            return IGS_jsonStringify({ success: true, data: { hasDoc: false } });
+        }
+        var doc = app.activeDocument;
+        var docName = doc.name;
+        var docSaved = doc.saved;
+
+        var psdDir = '';
+        var psdPath = '';
+        var hasFile = false;
+        try {
+            var f = doc.fullName;
+            psdPath = f.fsName.replace(/\\/g, '/');
+            psdDir = doc.path.fsName.replace(/\\/g, '/');
+            hasFile = true;
+        } catch(e) {
+            hasFile = false;
+        }
+
+        // 檢查 project_data.json
+        var pdExists = false;
+        var pdNasPath = '';
+        if (hasFile) {
+            var pdFile = new File(psdDir + '/project_data.json');
+            if (pdFile.exists) {
+                pdExists = true;
+                var pdText = _IGS_readTextFile(pdFile);
+                var pd = _IGS_parseJSONC(pdText);
+                if (pd && pd.target_nas_path) {
+                    pdNasPath = String(pd.target_nas_path).replace(/\\/g, '/');
+                }
+            }
+        }
+
+        // 解析語系設定
+        var langs = [];
+        if (langsJson) {
+            langs = _IGS_parseJSON(langsJson) || [];
+        }
+        if (!langs || langs.length === 0) {
+            langs = [
+                { suffix: 'CHT', keyword: '_CHT使用' },
+                { suffix: 'EN',  keyword: '_EN使用'  }
+            ];
+        }
+
+        // 掃描第一層 group，找匹配
+        var matched = [];
+        var allTopGroups = [];   // 所有第一層群組（debug 用）
+        for (var i = 0; i < doc.layerSets.length; i++) {
+            var ls = doc.layerSets[i];
+            allTopGroups.push(ls.name);
+            for (var j = 0; j < langs.length; j++) {
+                if (ls.name.indexOf(langs[j].keyword) >= 0) {
+                    matched.push({ name: ls.name, suffix: langs[j].suffix });
+                    break;
+                }
+            }
+        }
+        // 第一層 art layers（不是群組的單獨圖層）
+        var allTopArtLayers = [];
+        for (var iA = 0; iA < doc.artLayers.length; iA++) {
+            allTopArtLayers.push(doc.artLayers[iA].name);
+        }
+
+        return IGS_jsonStringify({
+            success: true,
+            data: {
+                hasDoc: true,
+                docName: docName,
+                docSaved: docSaved,
+                hasFile: hasFile,
+                psdDir: psdDir,
+                psdPath: psdPath,
+                pdExists: pdExists,
+                pdNasPath: pdNasPath,
+                matchedGroups: matched,
+                allTopGroups: allTopGroups,
+                allTopArtLayers: allTopArtLayers
+            }
+        });
+    } catch(e) {
+        return IGS_error(String(e));
+    }
+}
+
+/**
+ * 執行多語系出圖
+ * @param {string} langsJson - JSON 字串：[{ suffix, keyword }, ...]
+ * @param {string} manualOutputPath - 使用者指定的輸出資料夾（優先級最高，若空字串則自動決定）
+ */
+function IGS_runMultilangExport(langsJson, manualOutputPath) {
+    try {
+        if (!app.documents.length) return IGS_error('NO_DOCUMENT');
+        var doc = app.activeDocument;
+
+        // 必須已存檔
+        var psdDir;
+        try { psdDir = doc.path; }
+        catch(e) { return IGS_error('PSD_NOT_SAVED'); }
+        if (!doc.saved) return IGS_error('PSD_HAS_UNSAVED_CHANGES');
+
+        // 解析語系
+        var langs = [];
+        if (langsJson) {
+            langs = _IGS_parseJSON(langsJson) || [];
+        }
+        if (!langs || langs.length === 0) {
+            langs = [
+                { suffix: 'CHT', keyword: '_CHT使用' },
+                { suffix: 'EN',  keyword: '_EN使用'  }
+            ];
+        }
+
+        // 決定輸出路徑：manual > project_data.json > #出圖 fallback
+        var outFolder = null;
+        var sourceUsed = '';
+        var fallbackUsed = false;
+        var fallbackReason = '';
+
+        if (manualOutputPath && manualOutputPath !== '') {
+            var manualF = new Folder(manualOutputPath);
+            if (manualF.exists) {
+                outFolder = manualF; sourceUsed = 'manual';
+            } else {
+                try {
+                    if (manualF.create()) { outFolder = manualF; sourceUsed = 'manual'; }
+                } catch(eMc) {}
+                if (!outFolder) {
+                    fallbackReason = '手動指定路徑無法存取或建立失敗：' + manualOutputPath;
+                }
+            }
+        }
+
+        if (!outFolder) {
+            // 嘗試讀 project_data.json
+            var pdFile = new File(psdDir + '/project_data.json');
+            if (pdFile.exists) {
+                var pd = _IGS_parseJSONC(_IGS_readTextFile(pdFile));
+                var nas = pd && pd.target_nas_path ? String(pd.target_nas_path) : '';
+                if (nas !== '') {
+                    var nasF = new Folder(nas);
+                    if (nasF.exists) { outFolder = nasF; sourceUsed = 'project_data'; }
+                    else {
+                        try { if (nasF.create()) { outFolder = nasF; sourceUsed = 'project_data'; } } catch(eN) {}
+                        if (!outFolder) fallbackReason = 'NAS 路徑無法存取或建立失敗：' + nas;
+                    }
+                }
+            }
+        }
+
+        if (!outFolder) {
+            // 自動模式 fallback：直接用 PSD 同層資料夾
+            outFolder = new Folder(psdDir);
+            sourceUsed = 'psd_dir';
+            fallbackUsed = true;
+            if (!fallbackReason) fallbackReason = '未指定 NAS / 手動路徑，使用 PSD 同層';
+        }
+
+        // 掃描匹配
+        var matched = [];
+        for (var i = 0; i < doc.layerSets.length; i++) {
+            var ls = doc.layerSets[i];
+            for (var j = 0; j < langs.length; j++) {
+                if (ls.name.indexOf(langs[j].keyword) >= 0) {
+                    matched.push({ layer: ls, lang: langs[j], originalVisible: ls.visible });
+                    break;
+                }
+            }
+        }
+        if (matched.length === 0) {
+            return IGS_error('NO_MATCHED_GROUPS');
+        }
+
+        // 全部隱藏
+        for (var k = 0; k < matched.length; k++) matched[k].layer.visible = false;
+
+        // 設定 PNG 匯出選項
+        var sfwOpts = new ExportOptionsSaveForWeb();
+        sfwOpts.format = SaveDocumentType.PNG;
+        sfwOpts.PNG8 = false;
+        sfwOpts.transparency = true;
+        sfwOpts.interlaced = false;
+
+        var psdBase = doc.name.replace(/\.psd$/i, '');
+        var exported = [];
+        var failedItem = null;
+
+        for (var n = 0; n < matched.length; n++) {
+            for (var m = 0; m < matched.length; m++) matched[m].layer.visible = (m === n);
+            var outName = psdBase + '_' + matched[n].lang.suffix + '.png';
+            var outFile = new File(outFolder + '/' + outName);
+            try {
+                doc.exportDocument(outFile, ExportType.SAVEFORWEB, sfwOpts);
+                exported.push(outName);
+            } catch(eExp) {
+                failedItem = { name: outName, err: String(eExp) };
+                break;
+            }
+        }
+
+        // 還原可見性
+        for (var p = 0; p < matched.length; p++) matched[p].layer.visible = matched[p].originalVisible;
+
+        if (failedItem) {
+            return IGS_jsonStringify({
+                error: 'EXPORT_FAILED',
+                data: {
+                    failed: failedItem,
+                    exported: exported,
+                    total: matched.length,
+                    outputFolder: outFolder.fsName.replace(/\\/g, '/')
+                }
+            });
+        }
+
+        return IGS_jsonStringify({
+            success: true,
+            data: {
+                exported: exported,
+                outputFolder: outFolder.fsName.replace(/\\/g, '/'),
+                sourceUsed: sourceUsed,
+                fallbackUsed: fallbackUsed,
+                fallbackReason: fallbackReason
+            }
+        });
+    } catch(e) {
+        return IGS_error(String(e));
+    }
+}
